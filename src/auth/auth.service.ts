@@ -1,128 +1,74 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
-import { MailService } from 'src/mail/mail.service';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { UsersService } from 'src/users/users.service';
-import * as bcrypt from 'bcrypt';
+import { MailService } from 'src/mail/mail.service';
+import { User } from 'src/entities/user.entity';
+import { DatabaseService } from 'src/db/database.service';
+import { SignupToken } from 'src/entities/signup-token.entity';
 
 @Injectable()
 export class AuthService {
     constructor(
-        private prisma: PrismaService,
+        private databaseService: DatabaseService,
         private usersService: UsersService,
         private jwtService: JwtService,
         private mailService: MailService
-    ) {}
+    ) { }
 
-    async validateUserWithUsername(username: string, password: string): Promise<any> {
-        const user = await this.usersService.findByUsername(username);
-        if (user && bcrypt.compareSync(password, user.password)) {
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+    async signup(email: string, username: string, name: string, password: string, signupToken?: SignupToken): Promise<User | null> {
+        return await this.usersService.create(email, username, password, name, signupToken);
     }
 
-    async validateUserWithEmail(email: string, password: string): Promise<any> {
-        const user = await this.usersService.findByEmail(email);
-        if (user && bcrypt.compareSync(password, user.password)) {
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+    async signin(user: User): Promise<string> {
+        const payload = {
+            sub: user.id,
+        };
+
+        return await this.jwtService.signAsync(payload);
     }
 
-    async signup(email: string, username: string, password: string) {
-        const hashedPassword = bcrypt.hashSync(password, 10);
-        return this.usersService.create(email, username, hashedPassword);
+    async signout(user: User, token: string): Promise<boolean> {
+        const query = "INSERT INTO auth_tokens_blacklist(user_id, token) VALUES ($1, $2);";
+        await this.databaseService.query(query, [user.id, token]);
+
+        return true;
     }
 
-    async signin(emailOrUsername: string, userIp: string) {
-        const user = await this.usersService.findByEmail(emailOrUsername) || await this.usersService.findByUsername(emailOrUsername);
-        const token = await this.prisma.userAuthTokens.findFirst({
-            where: {
-                userId: user.id,
-                ip: userIp
-            }
-        }).then(token => token?.token);
-
-        if (token) {
-            try {
-                await this.jwtService.verifyAsync(token);
-                return {
-                    token: token,
-                };
-            } catch (error) {
-                return this.generateToken(user, userIp);
-            }
-        } else {
-            return this.generateToken(user, userIp);
-        }
-    }
-
-    async generateToken(user: User, userIp: string) {
-        try {
-            const payload = {
-                username: user.username,
-                sub: user.id,
-                timestamp: new Date().toISOString()
-            };
-
-            const token = await this.jwtService.signAsync(payload);
-            this.registerToken(user.id, token, userIp);
-
-            return {
-                access_token: token,
-            };
-        } catch (error) {
-            throw new UnauthorizedException('Error generating token.');
-        }
-    }
-
-    async registerToken(userId: number, token: string, userIp: string) {
-        return this.prisma.userAuthTokens.create({
-            data: {
-                userId: userId,
-                token: token,
-                ip: userIp
-            }
-        });
-    }
-
-    async logout(token: string) {
-        const existsToken = await this.prisma.userAuthTokens.findFirst({
-            where: {
-                token: token
-            }
-        });
-
-        if (!existsToken) {
-            throw new UnauthorizedException('Token does not exist.');
-        }
-        
-        return await this.prisma.userAuthTokens.delete({
-            where: {
-                token: token
-            }
-        });
-    }
-
-    async clearAuthTokens(userId: number) {
-        return this.prisma.userAuthTokens.deleteMany({
-            where: {
-                userId: userId
-            }
-        });
-    }
-
-    async forgotPassword(user: User) {
+    async forgotPassword(user: User): Promise<boolean> {
         const token = Math.floor(100000 + Math.random() * 900000).toString();
-        
+
         user.changePasswordToken = token;
         user.changePasswordTokenExpiry = new Date(Date.now() + 300000);
         await this.usersService.update(user);
 
         await this.mailService.sendForgotPasswordToken(user, token);
+
+        return true;
+    }
+
+    async findSignupToken(token: string): Promise<SignupToken | null> {
+        const query = "SELECT * FROM signup_tokens WHERE token = $1;";
+        const result = await this.databaseService.query(query, [token]);
+
+        if (result.length === 0)
+            return null;
+
+        const signupToken: SignupToken = {
+            id: result[0].id,
+            token: result[0].token,
+            adminId: result[0].admin_id,
+            tenantId: result[0].tenant_id,
+            roleId: result[0].role_id,
+            email: result[0].user_email,
+        };
+
+        return signupToken;
+    }
+
+    async deleteSignupTokens(userEmail: string): Promise<boolean> {
+        const query = "DELETE FROM signup_tokens WHERE email = $1;";
+        await this.databaseService.query(query, [userEmail]);
+
+        return true;
     }
 }
