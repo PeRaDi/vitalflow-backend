@@ -6,7 +6,6 @@ import Response from 'src/responses/response';
 import { Roles } from 'src/roles/roles.decorator';
 import { User } from 'src/entities/user.entity';
 import { AddContactsDto } from './dto/add-contacts.dto';
-import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { UsersService } from 'src/users/users.service';
 import { RolesService } from 'src/roles/roles.service';

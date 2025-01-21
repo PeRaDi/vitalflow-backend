@@ -208,6 +208,14 @@ export class UsersService {
         return result.length > 0;
     }
 
+    async activate(user: User): Promise<boolean> {
+        const query = 'UPDATE users SET active = true, updated_at = $1 WHERE id = $2 RETURNING *;';
+        const params = [new Date(), user.id];
+
+        const result = await this.databaseService.query(query, params);
+        return result.length > 0;
+    }
+
     async clearPasswordResetToken(user: User): Promise<boolean> {
         const query = 'UPDATE users SET change_password_token = NULL, updated_at = $1 WHERE id = $2 RETURNING *;';
         const params = [new Date(), user.id];
