@@ -10,7 +10,7 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { UsersService } from 'src/users/users.service';
 import { RolesService } from 'src/roles/roles.service';
-import { InviteUserDto } from './dto/dto/invite-user.dto';
+import { InviteUserDto } from './dto/invite-user.dto';
 import { Role } from 'src/entities/role.entity';
 import { Tenant } from 'src/entities/tenant.entity';
 
