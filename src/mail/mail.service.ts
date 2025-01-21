@@ -4,7 +4,9 @@ import { User } from 'src/entities/user.entity';
 
 @Injectable()
 export class MailService {
-    constructor(private mailerService: MailerService) { }
+    constructor(
+        private readonly mailerService: MailerService
+    ) { }
 
     async sendForgotPasswordToken(user: User, token: string) {
         await this.mailerService.sendMail({

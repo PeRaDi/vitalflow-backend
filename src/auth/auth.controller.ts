@@ -14,7 +14,11 @@ import { ResetPasswordDto } from './dto/resetPassword.dto';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private usersService: UsersService, private authService: AuthService, private mailService: MailService) { }
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly authService: AuthService,
+        private readonly mailService: MailService
+    ) { }
 
     @Public()
     @Post("signup")
@@ -42,7 +46,7 @@ export class AuthController {
                 "username": user.username,
             };
 
-            await this.authService.deleteSignupTokens(user.email);
+            await this.usersService.deleteSignupTokens(user.email);
 
             return new Response(res, "Successfully signed up.", HttpStatus.CREATED, data).toHttpResponse();
         } catch (error) {

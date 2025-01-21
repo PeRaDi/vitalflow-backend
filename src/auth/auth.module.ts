@@ -8,6 +8,8 @@ import { DatabaseModule } from 'src/db/database.module';
 import { UsersModule } from 'src/users/users.module';
 import { MailModule } from 'src/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RolesGuard } from './guards/roles.guard';
+import { RolesModule } from 'src/roles/roles.module';
 
 @Module({
     imports: [
@@ -25,6 +27,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         DatabaseModule,
         UsersModule,
         MailModule,
+        RolesModule
     ],
     providers: [
         AuthService,
@@ -32,8 +35,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             provide: APP_GUARD,
             useClass: JwtAuthGuard,
         },
+        {
+            provide: APP_GUARD,
+            useClass: RolesGuard,
+        },
     ],
     exports: [AuthService],
     controllers: [AuthController],
 })
+
 export class AuthModule { }

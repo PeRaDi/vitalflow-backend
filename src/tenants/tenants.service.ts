@@ -4,7 +4,9 @@ import { Tenant } from 'src/entities/tenant.entity';
 
 @Injectable()
 export class TenantsService {
-    constructor(private databaseService: DatabaseService) { }
+    constructor(
+        private readonly databaseService: DatabaseService
+    ) { }
 
     async create(name: string, email: string, address: string): Promise<Tenant | null> {
         const query = 'INSERT INTO tenants (name, address, email) VALUES ($1, $2, $3) RETURNING *;';

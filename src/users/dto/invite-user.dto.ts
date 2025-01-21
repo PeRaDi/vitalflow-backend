@@ -8,5 +8,5 @@ export class InviteUserDto {
     roleId: number;
 
     @ApiProperty()
-    tenantId: number;
+    tenantId?: number;
 }

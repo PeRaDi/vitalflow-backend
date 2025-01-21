@@ -64,11 +64,4 @@ export class AuthService {
 
         return signupToken;
     }
-
-    async deleteSignupTokens(userEmail: string): Promise<boolean> {
-        const query = "DELETE FROM signup_tokens WHERE email = $1;";
-        await this.databaseService.query(query, [userEmail]);
-
-        return true;
-    }
 }

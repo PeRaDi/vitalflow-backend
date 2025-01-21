@@ -4,10 +4,16 @@ import { User } from 'src/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { SignupToken } from 'src/entities/signup-token.entity';
 import ErrorResponse from 'src/responses/error-response';
+import { Tenant } from 'src/entities/tenant.entity';
+import { Role } from 'src/entities/role.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
-    constructor(private databaseService: DatabaseService) { }
+    constructor(
+        private readonly databaseService: DatabaseService,
+        private readonly mailService: MailService
+    ) { }
 
     async create(email: string, username: string, password: string, name: string, signupToken?: SignupToken): Promise<User | null> {
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -69,21 +75,73 @@ export class UsersService {
     }
 
     async findOne(userId: number): Promise<User | null> {
-        const query = 'SELECT * FROM users WHERE id = $1;';
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at,
+                t.id AS tenant_id,
+                t.name AS tenant_name,
+                t.email AS tenant_email,
+                t.address AS tenant_address,
+                t.created_at AS tenant_created_at,
+                t.updated_at AS tenant_updated_at,
+                t.active AS tenant_active
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            LEFT JOIN 
+                tenants t ON u.tenant_id = t.id
+            WHERE 
+                u.id = $1;
+        `;
+
         const result = await this.databaseService.query(query, [userId]);
 
         if (result.length == 0)
             return null;
 
+        const tenant: Tenant = {
+            id: result[0].tenant_id,
+            name: result[0].tenant_name,
+            email: result[0].tenant_email,
+            address: result[0].tenant_address,
+            createdAt: result[0].tenant_created_at,
+            updatedAt: result[0].tenant_updated_at,
+            active: result[0].tenant_active
+        };
+
+        const role: Role = {
+            id: result[0].role_id,
+            label: result[0].role_label,
+            displayName: result[0].role_display_name,
+            level: result[0].role_level,
+            createdAt: result[0].role_created_at,
+            updatedAt: result[0].role_updated_at
+        };
+
         const user: User = {
-            id: result[0].id,
+            id: result[0].user_id,
             email: result[0].email,
             username: result[0].username,
             password: result[0].password,
             name: result[0].name,
             createdAt: result[0].created_at,
             updatedAt: result[0].updated_at,
-            active: result[0].active
+            active: result[0].active,
+            role: role,
+            tenant: tenant
         };
 
         return user;
@@ -168,4 +226,35 @@ export class UsersService {
         const result = await this.databaseService.query(query, params);
         return result.length > 0;
     }
+
+    async deleteSignupTokens(userEmail: string): Promise<boolean> {
+        const query = "DELETE FROM signup_tokens WHERE user_email = $1;";
+        await this.databaseService.query(query, [userEmail]);
+
+        return true;
+    }
+
+    async inviteUser(managerUser: User, email: string, tenant: Tenant, role: Role): Promise<boolean> {
+        const query = `
+        INSERT INTO signup_tokens (
+            token,
+            inviter_id,
+            tenant_id,
+            role_id,
+            user_email
+        ) 
+        VALUES ($1, $2, $3, $4, $5) 
+        RETURNING *`;
+
+        const token = Math.floor(100000 + Math.random() * 900000);
+        const params = [token, managerUser.id, tenant.id, role.id, email];
+
+        const result = await this.databaseService.query(query, params);
+        if (result.length === 0)
+            return false;
+
+        this.mailService.sendSignupInviteEmail(email, "[CHANGETHIS]", token);
+        return true;
+    }
+
 }

@@ -1,6 +1,6 @@
 export interface Role {
     id: number;
-    display_name: string;
+    displayName: string;
     label: string;
     level: number;
     createdAt: Date;

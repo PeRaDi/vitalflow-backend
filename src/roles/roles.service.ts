@@ -4,7 +4,9 @@ import { Role } from 'src/entities/role.entity';
 
 @Injectable()
 export class RolesService {
-    constructor(private readonly databaseService: DatabaseService) { }
+    constructor(
+        private readonly databaseService: DatabaseService
+    ) { }
 
     async findAll(): Promise<Role[]> {
         const query = "SELECT * FROM roles;";
@@ -34,7 +36,7 @@ export class RolesService {
 
         const role: Role = {
             id: result[0].id,
-            display_name: result[0].display_name,
+            displayName: result[0].display_name,
             label: result[0].label,
             level: result[0].level,
             createdAt: result[0].created_at,
@@ -53,7 +55,7 @@ export class RolesService {
 
         const role: Role = {
             id: result[0].id,
-            display_name: result[0].display_name,
+            displayName: result[0].display_name,
             label: result[0].label,
             level: result[0].level,
             createdAt: result[0].created_at,
