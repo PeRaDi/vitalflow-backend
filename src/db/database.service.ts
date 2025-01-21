@@ -14,20 +14,30 @@ export class DatabaseService {
         });
     }
 
-    async query(queryText: string, params?: any[], returnFullResult = false): Promise<any> {
+    async query(
+        queryText: string,
+        params?: any[],
+        returnFullResult = false,
+    ): Promise<any> {
         const client = await this.pool.connect();
         try {
             const res = await client.query(queryText, params);
             return returnFullResult ? res : res.rows;
         } catch (error) {
-            console.error('Database query error:', { queryText, params, error });
+            console.error('Database query error:', {
+                queryText,
+                params,
+                error,
+            });
             throw error;
         } finally {
             client.release();
         }
     }
 
-    async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    async transaction<T>(
+        callback: (client: PoolClient) => Promise<T>,
+    ): Promise<T> {
         const client = await this.pool.connect();
         try {
             await client.query('BEGIN');

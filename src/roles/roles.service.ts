@@ -4,24 +4,21 @@ import { Role } from 'src/entities/role.entity';
 
 @Injectable()
 export class RolesService {
-    constructor(
-        private readonly databaseService: DatabaseService
-    ) { }
+    constructor(private readonly databaseService: DatabaseService) {}
 
     async findAll(): Promise<Role[]> {
-        const query = "SELECT * FROM roles;";
+        const query = 'SELECT * FROM roles;';
         const result = await this.databaseService.query(query);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
-        const roles: Role[] = result.map(row => ({
+        const roles: Role[] = result.map((row) => ({
             id: row.id,
             display_name: row.display_name,
             label: row.label,
             level: row.level,
             createdAt: row.created_at,
-            updatedAt: row.created_at
+            updatedAt: row.created_at,
         }));
 
         return roles;
@@ -31,8 +28,7 @@ export class RolesService {
         const query = 'SELECT * FROM roles WHERE id = $1;';
         const result = await this.databaseService.query(query, [roleId]);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         const role: Role = {
             id: result[0].id,
@@ -40,7 +36,7 @@ export class RolesService {
             label: result[0].label,
             level: result[0].level,
             createdAt: result[0].created_at,
-            updatedAt: result[0].created_at
+            updatedAt: result[0].created_at,
         };
 
         return role;
@@ -50,8 +46,7 @@ export class RolesService {
         const query = 'SELECT * FROM roles WHERE label = $1;';
         const result = await this.databaseService.query(query, [label]);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         const role: Role = {
             id: result[0].id,
@@ -59,7 +54,7 @@ export class RolesService {
             label: result[0].label,
             level: result[0].level,
             createdAt: result[0].created_at,
-            updatedAt: result[0].created_at
+            updatedAt: result[0].created_at,
         };
 
         return role;

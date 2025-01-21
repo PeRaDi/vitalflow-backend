@@ -1,27 +1,38 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/db/database.service';
-import { User } from 'src/entities/user.entity';
 import * as bcrypt from 'bcrypt';
-import { SignupToken } from 'src/entities/signup-token.entity';
-import ErrorResponse from 'src/responses/error-response';
-import { Tenant } from 'src/entities/tenant.entity';
+import { DatabaseService } from 'src/db/database.service';
 import { Role } from 'src/entities/role.entity';
+import { SignupToken } from 'src/entities/signup-token.entity';
+import { Tenant } from 'src/entities/tenant.entity';
+import { User } from 'src/entities/user.entity';
+import ErrorResponse from 'src/responses/error-response';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        private readonly databaseService: DatabaseService,
-    ) { }
+    constructor(private readonly databaseService: DatabaseService) {}
 
-    async create(email: string, username: string, password: string, name: string, signupToken?: SignupToken): Promise<User | null> {
+    async create(
+        email: string,
+        username: string,
+        password: string,
+        name: string,
+        signupToken?: SignupToken,
+    ): Promise<User | null> {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = 'INSERT INTO users (email, username, password, name, role_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;';
-        const params = [email, username, hashedPassword, name, signupToken.roleId, signupToken.tenantId];
+        const query =
+            'INSERT INTO users (email, username, password, name, role_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;';
+        const params = [
+            email,
+            username,
+            hashedPassword,
+            name,
+            signupToken.roleId,
+            signupToken.tenantId,
+        ];
 
         const result = await this.databaseService.query(query, params);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         const user: User = {
             id: result[0].id,
@@ -31,27 +42,47 @@ export class UsersService {
             name: result[0].name,
             createdAt: result[0].created_at,
             updatedAt: result[0].updated_at,
-            active: result[0].active
+            active: result[0].active,
         };
 
         return user;
     }
 
-    async createAdmin(email: string, username: string, password: string, name: string): Promise<User | null> {
+    async createAdmin(
+        email: string,
+        username: string,
+        password: string,
+        name: string,
+    ): Promise<User | null> {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const rolesQuery = "SELECT * FROM roles WHERE label=$1;";
+        const rolesQuery = 'SELECT * FROM roles WHERE label=$1;';
 
-        const rolesResult = await this.databaseService.query(rolesQuery, ["ADMIN"]);
+        const rolesResult = await this.databaseService.query(rolesQuery, [
+            'ADMIN',
+        ]);
         if (rolesResult.length == 0)
-            throw new ErrorResponse("Admin role not found.", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ErrorResponse(
+                'Admin role not found.',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
 
-        const queryAdmin = 'INSERT INTO users (email, username, password, name, role_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;';
-        const paramsAdmin = [email, username, hashedPassword, name, rolesResult[0].id, null];
+        const queryAdmin =
+            'INSERT INTO users (email, username, password, name, role_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;';
+        const paramsAdmin = [
+            email,
+            username,
+            hashedPassword,
+            name,
+            rolesResult[0].id,
+            null,
+        ];
 
-        const result = await this.databaseService.query(queryAdmin, paramsAdmin);
+        const result = await this.databaseService.query(
+            queryAdmin,
+            paramsAdmin,
+        );
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         const user: User = {
             id: result[0].id,
@@ -61,7 +92,7 @@ export class UsersService {
             name: result[0].name,
             createdAt: result[0].created_at,
             updatedAt: result[0].updated_at,
-            active: result[0].active
+            active: result[0].active,
         };
         return user;
     }
@@ -107,8 +138,7 @@ export class UsersService {
 
         const result = await this.databaseService.query(query, [userId]);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         const tenant: Tenant = {
             id: result[0].tenant_id,
@@ -117,7 +147,7 @@ export class UsersService {
             address: result[0].tenant_address,
             createdAt: result[0].tenant_created_at,
             updatedAt: result[0].tenant_updated_at,
-            active: result[0].tenant_active
+            active: result[0].tenant_active,
         };
 
         const role: Role = {
@@ -126,7 +156,7 @@ export class UsersService {
             displayName: result[0].role_display_name,
             level: result[0].role_level,
             createdAt: result[0].role_created_at,
-            updatedAt: result[0].role_updated_at
+            updatedAt: result[0].role_updated_at,
         };
 
         const user: User = {
@@ -139,7 +169,7 @@ export class UsersService {
             updatedAt: result[0].updated_at,
             active: result[0].active,
             role: role,
-            tenant: tenant
+            tenant: tenant,
         };
 
         return user;
@@ -163,10 +193,9 @@ export class UsersService {
         const query = 'SELECT * FROM users WHERE id IN ($1);';
         const result = await this.databaseService.query(query, [userIds]);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
-        const users: User[] = result.map(row => ({
+        const users: User[] = result.map((row) => ({
             id: row.id,
             email: row.email,
             username: row.username,
@@ -174,26 +203,35 @@ export class UsersService {
             name: row.name,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
-            active: row.active
+            active: row.active,
         }));
 
         return users;
     }
 
     async update(user: User): Promise<User | null> {
-        const query = 'UPDATE users SET email = $1, username = $2, name = $3, role_id = $4, tenant_id = $5, updated_at = $6 WHERE id = $7 RETURNING *;';
-        const params = [user.email, user.username, user.name, user.role.id, user.tenant.id, new Date(), user.id];
+        const query =
+            'UPDATE users SET email = $1, username = $2, name = $3, role_id = $4, tenant_id = $5, updated_at = $6 WHERE id = $7 RETURNING *;';
+        const params = [
+            user.email,
+            user.username,
+            user.name,
+            user.role.id,
+            user.tenant.id,
+            new Date(),
+            user.id,
+        ];
         const result = await this.databaseService.query(query, params);
 
-        if (result.length == 0)
-            return null;
+        if (result.length == 0) return null;
 
         return user;
     }
 
     async updatePassword(user: User, password: string): Promise<boolean> {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = 'UPDATE users SET password = $1, updated_at = $2 WHERE id = $3 RETURNING *;';
+        const query =
+            'UPDATE users SET password = $1, updated_at = $2 WHERE id = $3 RETURNING *;';
         const params = [hashedPassword, new Date(), user.id];
 
         const result = await this.databaseService.query(query, params);
@@ -201,7 +239,8 @@ export class UsersService {
     }
 
     async deactivate(user: User): Promise<boolean> {
-        const query = 'UPDATE users SET active = false, updated_at = $1 WHERE id = $2 RETURNING *;';
+        const query =
+            'UPDATE users SET active = false, updated_at = $1 WHERE id = $2 RETURNING *;';
         const params = [new Date(), user.id];
 
         const result = await this.databaseService.query(query, params);
@@ -209,7 +248,8 @@ export class UsersService {
     }
 
     async activate(user: User): Promise<boolean> {
-        const query = 'UPDATE users SET active = true, updated_at = $1 WHERE id = $2 RETURNING *;';
+        const query =
+            'UPDATE users SET active = true, updated_at = $1 WHERE id = $2 RETURNING *;';
         const params = [new Date(), user.id];
 
         const result = await this.databaseService.query(query, params);
@@ -217,7 +257,8 @@ export class UsersService {
     }
 
     async clearPasswordResetToken(user: User): Promise<boolean> {
-        const query = 'UPDATE users SET change_password_token = NULL, updated_at = $1 WHERE id = $2 RETURNING *;';
+        const query =
+            'UPDATE users SET change_password_token = NULL, updated_at = $1 WHERE id = $2 RETURNING *;';
         const params = [new Date(), user.id];
 
         const result = await this.databaseService.query(query, params);
@@ -226,7 +267,8 @@ export class UsersService {
 
     async changePassword(user: User, newPassword: string): Promise<boolean> {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const query = "UPDATE users SET password = $1, updated_at = $2 WHERE id = $3 RETURNING *;";
+        const query =
+            'UPDATE users SET password = $1, updated_at = $2 WHERE id = $3 RETURNING *;';
         const params = [hashedPassword, new Date(), user.id];
 
         const result = await this.databaseService.query(query, params);
@@ -234,7 +276,7 @@ export class UsersService {
     }
 
     async deleteSignupTokens(userEmail: string): Promise<boolean> {
-        const query = "DELETE FROM signup_tokens WHERE user_email = $1;";
+        const query = 'DELETE FROM signup_tokens WHERE user_email = $1;';
         await this.databaseService.query(query, [userEmail]);
 
         return true;

@@ -1,4 +1,4 @@
-import { HttpStatus } from "@nestjs/common";
+import { HttpStatus } from '@nestjs/common';
 
 export default class Response {
     response: any;
@@ -16,7 +16,7 @@ export default class Response {
     toHttpResponse() {
         return this.response.status(this.type).json({
             message: this.message,
-            data: this.data
+            data: this.data,
         });
     }
 }

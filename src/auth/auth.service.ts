@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from 'src/users/users.service';
-import { MailService } from 'src/mail/mail.service';
-import { User } from 'src/entities/user.entity';
 import { DatabaseService } from 'src/db/database.service';
 import { SignupToken } from 'src/entities/signup-token.entity';
+import { User } from 'src/entities/user.entity';
+import { MailService } from 'src/mail/mail.service';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -12,11 +12,23 @@ export class AuthService {
         private databaseService: DatabaseService,
         private usersService: UsersService,
         private jwtService: JwtService,
-        private mailService: MailService
-    ) { }
+        private mailService: MailService,
+    ) {}
 
-    async signup(email: string, username: string, name: string, password: string, signupToken?: SignupToken): Promise<User | null> {
-        return await this.usersService.create(email, username, password, name, signupToken);
+    async signup(
+        email: string,
+        username: string,
+        name: string,
+        password: string,
+        signupToken?: SignupToken,
+    ): Promise<User | null> {
+        return await this.usersService.create(
+            email,
+            username,
+            password,
+            name,
+            signupToken,
+        );
     }
 
     async signin(user: User): Promise<string> {
@@ -28,7 +40,8 @@ export class AuthService {
     }
 
     async signout(user: User, token: string): Promise<boolean> {
-        const query = "INSERT INTO auth_tokens_blacklist(user_id, token) VALUES ($1, $2);";
+        const query =
+            'INSERT INTO auth_tokens_blacklist(user_id, token) VALUES ($1, $2);';
         await this.databaseService.query(query, [user.id, token]);
 
         return true;
@@ -47,11 +60,10 @@ export class AuthService {
     }
 
     async findSignupToken(token: string): Promise<SignupToken | null> {
-        const query = "SELECT * FROM signup_tokens WHERE token = $1;";
+        const query = 'SELECT * FROM signup_tokens WHERE token = $1;';
         const result = await this.databaseService.query(query, [token]);
 
-        if (result.length === 0)
-            return null;
+        if (result.length === 0) return null;
 
         const signupToken: SignupToken = {
             id: result[0].id,

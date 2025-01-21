@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { DatabaseModule } from 'src/db/database.module';
-import { UsersModule } from 'src/users/users.module';
-import { MailModule } from 'src/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RolesGuard } from './guards/roles.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import { DatabaseModule } from 'src/db/database.module';
+import { MailModule } from 'src/mail/mail.module';
 import { RolesModule } from 'src/roles/roles.module';
+import { UsersModule } from 'src/users/users.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
     imports: [
@@ -27,7 +27,7 @@ import { RolesModule } from 'src/roles/roles.module';
         DatabaseModule,
         UsersModule,
         MailModule,
-        RolesModule
+        RolesModule,
     ],
     providers: [
         AuthService,
@@ -43,5 +43,4 @@ import { RolesModule } from 'src/roles/roles.module';
     exports: [AuthService],
     controllers: [AuthController],
 })
-
-export class AuthModule { }
+export class AuthModule {}

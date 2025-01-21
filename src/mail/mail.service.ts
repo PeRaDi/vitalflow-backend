@@ -4,9 +4,7 @@ import { User } from 'src/entities/user.entity';
 
 @Injectable()
 export class MailService {
-    constructor(
-        private readonly mailerService: MailerService
-    ) { }
+    constructor(private readonly mailerService: MailerService) {}
 
     async sendForgotPasswordToken(user: User, token: string) {
         await this.mailerService.sendMail({
@@ -42,7 +40,11 @@ export class MailService {
         });
     }
 
-    async sendSignupInviteEmail(toEmail: string, signupUrl: string, token: number) {
+    async sendSignupInviteEmail(
+        toEmail: string,
+        signupUrl: string,
+        token: number,
+    ) {
         await this.mailerService.sendMail({
             to: toEmail,
             subject: 'Invitation to vitalFlow',

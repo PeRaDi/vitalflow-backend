@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 export default class ErrorResponse {
     errorMessage: object;
@@ -16,17 +16,13 @@ export default class ErrorResponse {
                 message: message,
                 errorMessage: error.message,
             };
-            if(error.status === undefined)
+            if (error.status === undefined)
                 this.errorType = HttpStatus.INTERNAL_SERVER_ERROR;
-            else
-                this.errorType = error.status;
+            else this.errorType = error.status;
         }
     }
 
     toThrowException() {
-        throw new HttpException(
-            this.errorMessage,
-            this.errorType,
-        );
+        throw new HttpException(this.errorMessage, this.errorType);
     }
 }

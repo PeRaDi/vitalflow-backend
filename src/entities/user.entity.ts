@@ -1,5 +1,5 @@
-import { Role } from "./role.entity";
-import { Tenant } from "./tenant.entity";
+import { Role } from './role.entity';
+import { Tenant } from './tenant.entity';
 
 export interface User {
     id: number;

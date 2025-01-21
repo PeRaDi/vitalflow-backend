@@ -1,4 +1,4 @@
-import { TenantContact } from "./tenant-contact.entity";
+import { TenantContact } from './tenant-contact.entity';
 
 export interface Tenant {
     id: number;

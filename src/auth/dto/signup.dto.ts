@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class SignupDto {
     @ApiProperty()
@@ -18,4 +18,4 @@ export class SignupDto {
 
     @ApiProperty()
     signupToken: string;
-};
+}

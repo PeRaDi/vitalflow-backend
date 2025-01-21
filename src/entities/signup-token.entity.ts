@@ -3,6 +3,6 @@ export interface SignupToken {
     token: number;
     adminId: number;
     tenantId: number;
-    roleId: number,
+    roleId: number;
     email: string;
 }
