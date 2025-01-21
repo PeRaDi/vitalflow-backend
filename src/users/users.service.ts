@@ -6,13 +6,11 @@ import { SignupToken } from 'src/entities/signup-token.entity';
 import ErrorResponse from 'src/responses/error-response';
 import { Tenant } from 'src/entities/tenant.entity';
 import { Role } from 'src/entities/role.entity';
-import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
     constructor(
         private readonly databaseService: DatabaseService,
-        private readonly mailService: MailService
     ) { }
 
     async create(email: string, username: string, password: string, name: string, signupToken?: SignupToken): Promise<User | null> {
@@ -233,28 +231,4 @@ export class UsersService {
 
         return true;
     }
-
-    async inviteUser(managerUser: User, email: string, tenant: Tenant, role: Role): Promise<boolean> {
-        const query = `
-        INSERT INTO signup_tokens (
-            token,
-            inviter_id,
-            tenant_id,
-            role_id,
-            user_email
-        ) 
-        VALUES ($1, $2, $3, $4, $5) 
-        RETURNING *`;
-
-        const token = Math.floor(100000 + Math.random() * 900000);
-        const params = [token, managerUser.id, tenant.id, role.id, email];
-
-        const result = await this.databaseService.query(query, params);
-        if (result.length === 0)
-            return false;
-
-        this.mailService.sendSignupInviteEmail(email, "[CHANGETHIS]", token);
-        return true;
-    }
-
 }

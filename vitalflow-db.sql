@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.10 (Homebrew)
--- Dumped by pg_dump version 15.10 (Homebrew)
+-- Dumped from database version 14.15 (Homebrew)
+-- Dumped by pg_dump version 14.15 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,11 +16,12 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+DROP DATABASE "vitalflow-dev";
 --
 -- Name: vitalflow-dev; Type: DATABASE; Schema: -; Owner: peradi
 --
 
-CREATE DATABASE "vitalflow-dev" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'C';
+CREATE DATABASE "vitalflow-dev" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'C';
 
 
 ALTER DATABASE "vitalflow-dev" OWNER TO peradi;
@@ -37,6 +38,22 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: peradi
+--
+
+CREATE SCHEMA public;
+
+
+ALTER SCHEMA public OWNER TO peradi;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: peradi
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
 
 SET default_tablespace = '';
 
@@ -464,7 +481,7 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 CREATE TABLE public.signup_tokens (
     id integer NOT NULL,
     token integer NOT NULL,
-    admin_id integer NOT NULL,
+    inviter_id integer NOT NULL,
     tenant_id integer NOT NULL,
     role_id integer NOT NULL,
     user_email text NOT NULL
@@ -604,8 +621,9 @@ ALTER SEQUENCE public.stock_transactions_user_id_seq OWNED BY public.stock_trans
 --
 
 CREATE TABLE public.tenant_contacts (
-    id integer NOT NULL,
+    id serial NOT NULL,
     contact integer NOT NULL,
+    info text NOT NULL,
     tenant_id integer NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     updated_at timestamp without time zone DEFAULT now() NOT NULL
@@ -1107,7 +1125,7 @@ COPY public.roles (id, display_name, level, created_at, updated_at, label) FROM 
 -- Data for Name: signup_tokens; Type: TABLE DATA; Schema: public; Owner: peradi
 --
 
-COPY public.signup_tokens (id, token, admin_id, tenant_id, role_id, user_email) FROM stdin;
+COPY public.signup_tokens (id, token, inviter_id, tenant_id, role_id, user_email) FROM stdin;
 \.
 
 
@@ -1562,7 +1580,7 @@ ALTER TABLE ONLY public.signup_tokens
 --
 
 ALTER TABLE ONLY public.signup_tokens
-    ADD CONSTRAINT signup_tokens_users_id_fk FOREIGN KEY (admin_id) REFERENCES public.users(id);
+    ADD CONSTRAINT signup_tokens_users_id_fk FOREIGN KEY (inviter_id) REFERENCES public.users(id);
 
 
 --
