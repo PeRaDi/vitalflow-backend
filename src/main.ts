@@ -10,6 +10,14 @@ async function bootstrap() {
     const dbService = app.get(DatabaseService);
     const userService = app.get(UsersService);
 
+    app.enableCors({
+        origin: [process.env.FRONTEND_URL],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+        optionsSuccessStatus: 204,
+    });
+
     if (process.env.DEBUG) {
         const openApiConfig = new DocumentBuilder()
             .setTitle('vitalFlow Backend')

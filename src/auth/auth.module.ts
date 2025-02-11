@@ -20,7 +20,7 @@ import { RolesGuard } from './guards/roles.guard';
                 global: true,
                 secret: configService.get<string>('JWT_SECRET'),
                 signOptions: {
-                    expiresIn: 60 * 60,
+                    expiresIn: 7 * 24 * 60 * 60 * 1000,
                 },
             }),
         }),

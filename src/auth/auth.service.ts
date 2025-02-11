@@ -39,10 +39,9 @@ export class AuthService {
         return await this.jwtService.signAsync(payload);
     }
 
-    async signout(user: User, token: string): Promise<boolean> {
-        const query =
-            'INSERT INTO auth_tokens_blacklist(user_id, token) VALUES ($1, $2);';
-        await this.databaseService.query(query, [user.id, token]);
+    async signout(token: string): Promise<boolean> {
+        const query = 'INSERT INTO auth_tokens_blacklist(token) VALUES ($1);';
+        await this.databaseService.query(query, [token]);
 
         return true;
     }

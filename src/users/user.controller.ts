@@ -1,5 +1,6 @@
 import {
     Controller,
+    Get,
     HttpStatus,
     Param,
     Patch,
@@ -15,6 +16,25 @@ import { UsersService } from './users.service';
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
+
+    @Get('info')
+    async info(@Res() res, @Request() req) {
+        try {
+            const user: User = req.user;
+
+            return new Response(
+                res,
+                'Successfully retrieved personal user information.',
+                HttpStatus.OK,
+                user,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred.',
+                error,
+            ).toThrowException();
+        }
+    }
 
     @Patch(':user_id/deactivate')
     @Roles('manager')

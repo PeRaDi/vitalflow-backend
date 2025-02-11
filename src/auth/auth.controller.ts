@@ -7,7 +7,6 @@ import {
     Res,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { User } from 'src/entities/user.entity';
 import { MailService } from 'src/mail/mail.service';
 import ErrorResponse from 'src/responses/error-response';
 import Response from 'src/responses/response';
@@ -113,9 +112,20 @@ export class AuthController {
                 ).toThrowException();
 
             const token = await this.authService.signin(user);
-            return new Response(res, 'Successfully signed in.', HttpStatus.OK, {
-                token,
-            }).toHttpResponse();
+
+            res.cookie('access_token', token, {
+                httpOnly: true,
+                secure: process.env.ENV_TYPE === 'production',
+                sameSite: 'strict',
+                path: '/',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
+            return new Response(
+                res,
+                'Successfully signed in.',
+                HttpStatus.OK,
+            ).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(
                 'An error occurred while signing in.',
@@ -127,17 +137,26 @@ export class AuthController {
     @Post('signout')
     async signout(@Res() res, @Request() req) {
         try {
-            const user: User = req.user;
             const authHeader = req.headers.authorization;
             const token = authHeader?.split(' ')[1];
 
-            await this.authService.signout(user, token);
+            await this.authService.signout(token);
+
+            res.cookie('access_token', null, {
+                httpOnly: true,
+                secure: process.env.ENV_TYPE === 'production',
+                sameSite: 'strict',
+                path: '/',
+                maxAge: -1,
+            });
+
             return new Response(
                 res,
                 'Successfully signed out.',
                 HttpStatus.OK,
             ).toHttpResponse();
         } catch (error) {
+            console.log(error);
             return new ErrorResponse(
                 'An error occurred while signing out.',
                 error,

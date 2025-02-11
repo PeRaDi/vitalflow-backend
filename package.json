@@ -1,8 +1,8 @@
 {
   "name": "vitalflow",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Inventory Management System powered by AI",
+  "author": "peradi",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

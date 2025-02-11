@@ -6,8 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import ErrorResponse from 'src/responses/error-response';
 import { UsersService } from 'src/users/users.service';
 import { IS_PUBLIC_KEY } from '../auth.decorator';
@@ -30,14 +29,17 @@ export class JwtAuthGuard implements CanActivate {
         if (isPublic) return true;
 
         const req = context.switchToHttp().getRequest();
-        const token = this.extractTokenFromHeader(req);
 
-        if (!token) {
+        if (!req.headers.cookie) {
             throw new ErrorResponse(
                 'Invalid authentication token.',
                 HttpStatus.UNAUTHORIZED,
             ).toThrowException();
         }
+
+        const token = req.headers.cookie.split('=')[1];
+        req.headers.authorization = `Bearer ${token}`;
+
         const secretPayload = {
             secret: this.configService.get('JWT_SECRET'),
         };
@@ -49,18 +51,38 @@ export class JwtAuthGuard implements CanActivate {
             );
             const user = await this.userService.findOne(payload.sub);
 
+            if (!user) {
+                throw new ErrorResponse(
+                    'Invalid authentication token.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+            }
+
             req['user'] = user;
-        } catch {
+        } catch (error) {
+            if (
+                error instanceof TokenExpiredError &&
+                req.route.path !== '/auth/signout'
+            ) {
+                throw new ErrorResponse(
+                    'Token expired.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+            }
+
+            if (
+                error instanceof TokenExpiredError &&
+                req.route.path === '/auth/signout'
+            ) {
+                req['user'] = 'expired';
+                return true;
+            }
+
             throw new ErrorResponse(
                 'Invalid authentication token.',
                 HttpStatus.UNAUTHORIZED,
             ).toThrowException();
         }
         return true;
-    }
-
-    private extractTokenFromHeader(request: Request): string | undefined {
-        const [type, token] = request.headers.authorization?.split(' ') ?? [];
-        return type === 'Bearer' ? token : undefined;
     }
 }
