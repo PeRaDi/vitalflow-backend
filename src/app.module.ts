@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './db/database.module';
 import { MailModule } from './mail/mail.module';
 import { ManagerModule } from './manager/manager.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module';
         TenantsModule,
         RolesModule,
         ManagerModule,
+        RabbitMQModule,
     ],
     controllers: [AppController],
     providers: [AppService],
