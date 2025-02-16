@@ -32,6 +32,26 @@ export class TenantsController {
         private readonly rolesService: RolesService,
     ) {}
 
+    @Get('get')
+    @Roles('admin')
+    async get(@Res() res) {
+        try {
+            const tenants = await this.tenantsService.findAll();
+
+            return new Response(
+                res,
+                'Tenants successfully retrieved.',
+                HttpStatus.OK,
+                tenants,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
+
     @Post('create')
     @Roles('admin')
     async create(
