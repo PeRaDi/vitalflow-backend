@@ -36,26 +36,26 @@ export class UsersController {
         }
     }
 
-    @Patch(':user_id/deactivate')
+    @Patch(':user_id/toggle')
     @Roles('manager')
-    async deactivate(
+    async toggle(
         @Res() res,
         @Request() req,
         @Param('user_id') userIdParam: string,
     ) {
         try {
             const user: User = req.user;
-            const userToDeactivate: User = await this.usersService.findOne(
+            const userToToggle: User = await this.usersService.findOne(
                 Number(userIdParam),
             );
 
-            if (userToDeactivate.id === user.id)
+            if (userToToggle.id === user.id)
                 return new ErrorResponse(
-                    'You cannot deactivate your own user.',
+                    'You cannot toggle your own user.',
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
 
-            if (!userToDeactivate)
+            if (!userToToggle)
                 return new ErrorResponse(
                     'User not found.',
                     HttpStatus.BAD_REQUEST,
@@ -63,84 +63,29 @@ export class UsersController {
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
-                (user.tenant.id !== userToDeactivate.tenant.id ||
-                    user.role.level < userToDeactivate.role.level)
+                (user.tenant.id !== userToToggle.tenant.id ||
+                    user.role.level < userToToggle.role.level)
             )
                 return new ErrorResponse(
-                    'You are not authorized to deactivate this user.',
+                    'You are not authorized to toggle this user.',
                     HttpStatus.UNAUTHORIZED,
                 ).toThrowException();
 
-            const status = await this.usersService.deactivate(userToDeactivate);
+            const status = await this.usersService.toggle(userToToggle);
             if (!status)
                 return new ErrorResponse(
-                    'An error occurred while deactivating the user.',
+                    'An error occurred while toggling the user.',
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 ).toThrowException();
 
             return new Response(
                 res,
-                'User successfully deactivated.',
+                'User successfully toggled.',
                 HttpStatus.OK,
             ).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(
-                'An error occurred while deactivating the user.',
-                error,
-            ).toThrowException();
-        }
-    }
-
-    @Patch(':user_id/activate')
-    @Roles('manager')
-    async activate(
-        @Res() res,
-        @Request() req,
-        @Param('user_id') userIdParam: string,
-    ) {
-        try {
-            const user: User = req.user;
-            const userToActivate: User = await this.usersService.findOne(
-                Number(userIdParam),
-            );
-
-            if (userToActivate.id === user.id)
-                return new ErrorResponse(
-                    'You cannot activate your own user.',
-                    HttpStatus.BAD_REQUEST,
-                ).toThrowException();
-
-            if (!userToActivate)
-                return new ErrorResponse(
-                    'User not found.',
-                    HttpStatus.BAD_REQUEST,
-                ).toThrowException();
-
-            if (
-                user.role.label.toLowerCase() !== 'admin' &&
-                (user.tenant.id !== userToActivate.tenant.id ||
-                    user.role.level < userToActivate.role.level)
-            )
-                return new ErrorResponse(
-                    'You are not authorized to activate this user.',
-                    HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
-
-            const status = await this.usersService.activate(userToActivate);
-            if (!status)
-                return new ErrorResponse(
-                    'An error occurred while activating the user.',
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                ).toThrowException();
-
-            return new Response(
-                res,
-                'User successfully activated.',
-                HttpStatus.OK,
-            ).toHttpResponse();
-        } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while activating the user.',
+                'An error occurred while toggling the user.',
                 error,
             ).toThrowException();
         }

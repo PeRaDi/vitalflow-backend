@@ -113,9 +113,9 @@ export class TenantsService {
         return tenant;
     }
 
-    async deactivate(tenant: Tenant): Promise<boolean> {
+    async toggle(tenant: Tenant): Promise<boolean> {
         const query =
-            'UPDATE tenants SET active = false, updated_at = $1 WHERE id = $2 RETURNING *;';
+            'UPDATE tenants SET active = NOT active, updated_at = $1 WHERE id = $2 RETURNING *;';
         const params = [new Date(), tenant.id];
 
         const result = await this.databaseService.query(query, params);
@@ -218,5 +218,87 @@ export class TenantsService {
 
         const result = await this.databaseService.query(query, params);
         return result.length > 0;
+    }
+
+    async getUsers(tenantId: number): Promise<User[]> {
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                u.tenant_id,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            WHERE 
+                u.tenant_id = $1;
+        `;
+
+        const result = await this.databaseService.query(query, [tenantId]);
+
+        if (result.length == 0) return [];
+
+        const users: User[] = result.map((row) => ({
+            id: row.user_id,
+            email: row.email,
+            username: row.username,
+            name: row.name,
+            password: row.password,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            active: row.active,
+            tenantId: row.tenant_id,
+            role: {
+                id: row.role_id,
+                label: row.role_label,
+                displayName: row.role_display_name,
+                level: row.role_level,
+                createdAt: row.role_created_at,
+                updatedAt: row.role_updated_at,
+            },
+        }));
+
+        return users;
+    }
+
+    async getInvites(tenantId: number): Promise<any[]> {
+        const query = `SELECT u.id, u.inviter_id, u.tenant_id, u.user_email,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at FROM signup_tokens u LEFT JOIN roles r ON u.role_id = r.id WHERE tenant_id = $1;`;
+        const result = await this.databaseService.query(query, [tenantId]);
+
+        if (result.length == 0) return [];
+
+        const invitedUsers: any[] = result.map((row) => ({
+            id: row.id,
+            inviterId: row.inviter_id,
+            tenantId: row.tenant_id,
+            email: row.user_email,
+            role: {
+                id: row.role_id,
+                label: row.role_label,
+                displayName: row.role_display_name,
+                level: row.role_level,
+                createdAt: row.role_created_at,
+                updatedAt: row.role_updated_at,
+            },
+        }));
+
+        return invitedUsers;
     }
 }

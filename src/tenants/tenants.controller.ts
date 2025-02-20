@@ -419,4 +419,216 @@ export class TenantsController {
             ).toThrowException();
         }
     }
+
+    @Patch(':tenant_id/toggle')
+    @Roles('admin')
+    async toggleTenant(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new ErrorResponse(
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (user.role.label.toLowerCase() !== 'admin')
+                return new ErrorResponse(
+                    'You are not authorized to toggle tenants.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+
+            let tenant: Tenant = await this.tenantsService.findOne(tenantId);
+
+            if (tenant == null)
+                return new ErrorResponse(
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            const result = await this.tenantsService.toggle(tenant);
+
+            if (!result)
+                return new ErrorResponse(
+                    'An error occurred while toggling tenant.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            tenant = await this.tenantsService.findOne(tenantId);
+
+            return new Response(
+                res,
+                'Tenant successfully toggled.',
+                HttpStatus.OK,
+                { active: tenant.active },
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while toggling tenant.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Patch(':tenant_id/')
+    @Roles('admin')
+    async updateTenant(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+        @Body() createTenantDto: CreateTenantDto,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new ErrorResponse(
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (user.role.label.toLowerCase() !== 'admin')
+                return new ErrorResponse(
+                    'You are not authorized to update tenants.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+
+            let tenant: Tenant = await this.tenantsService.findOne(tenantId);
+
+            if (tenant == null)
+                return new ErrorResponse(
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (createTenantDto.name) tenant.name = createTenantDto.name;
+            if (createTenantDto.email) tenant.email = createTenantDto.email;
+            if (createTenantDto.address)
+                tenant.address = createTenantDto.address;
+
+            const result = await this.tenantsService.update(tenant);
+
+            if (!result)
+                return new ErrorResponse(
+                    'An error occurred while updating tenant.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            tenant = await this.tenantsService.findOne(tenantId);
+
+            return new Response(
+                res,
+                'Tenant successfully updated.',
+                HttpStatus.OK,
+                tenant,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while updating tenant.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Get(':tenant_id/users')
+    @Roles('manager')
+    async getUsers(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new ErrorResponse(
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (
+                user.role.label.toLowerCase() !== 'admin' &&
+                user.tenant.id !== tenantId
+            )
+                return new ErrorResponse(
+                    'You are not authorized to view this tenant users.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+
+            if ((await this.tenantsService.findOne(tenantId)) == null)
+                return new ErrorResponse(
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            const users = await this.tenantsService.getUsers(tenantId);
+
+            return new Response(
+                res,
+                'Tenant users successfully retrieved.',
+                HttpStatus.OK,
+                users,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Get(':tenant_id/invites')
+    @Roles('manager')
+    async getInvites(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new ErrorResponse(
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (
+                user.role.label.toLowerCase() !== 'admin' &&
+                user.tenant.id !== tenantId
+            )
+                return new ErrorResponse(
+                    'You are not authorized to view this tenant invites.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+
+            if ((await this.tenantsService.findOne(tenantId)) == null)
+                return new ErrorResponse(
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            const invites = await this.tenantsService.getInvites(tenantId);
+
+            return new Response(
+                res,
+                'Tenant invites successfully retrieved.',
+                HttpStatus.OK,
+                invites,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
 }
