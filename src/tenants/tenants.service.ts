@@ -273,14 +273,61 @@ export class TenantsService {
     }
 
     async getInvites(tenantId: number): Promise<any[]> {
-        const query = `SELECT u.id, u.inviter_id, u.tenant_id, u.user_email,
-                r.id AS role_id,
-                r.label AS role_label,
-                r.display_name AS role_display_name,
-                r.level AS role_level,
-                r.created_at AS role_created_at,
-                r.updated_at AS role_updated_at FROM signup_tokens u LEFT JOIN roles r ON u.role_id = r.id WHERE tenant_id = $1;`;
-        const result = await this.databaseService.query(query, [tenantId]);
+        let result;
+        if (tenantId === -1) {
+            const query = `
+                SELECT 
+                    u.id, 
+                    u.inviter_id, 
+                    u.tenant_id, 
+                    u.user_email,
+                    r.id AS role_id,
+                    r.label AS role_label,
+                    r.display_name AS role_display_name,
+                    r.level AS role_level,
+                    r.created_at AS role_created_at,
+                    r.updated_at AS role_updated_at,
+                    t.id AS tenant_id,
+                    t.name AS tenant_name,
+                    t.email AS tenant_email,
+                    t.address AS tenant_address,
+                    t.created_at AS tenant_created_at,
+                    t.updated_at AS tenant_updated_at,
+                    t.active AS tenant_active
+                FROM signup_tokens u
+                LEFT JOIN roles r ON u.role_id = r.id
+                LEFT JOIN tenants t ON u.tenant_id = t.id;
+            `;
+
+            result = await this.databaseService.query(query);
+        } else {
+            const query = `
+                SELECT 
+                    u.id, 
+                    u.inviter_id, 
+                    u.tenant_id, 
+                    u.user_email,
+                    r.id AS role_id,
+                    r.label AS role_label,
+                    r.display_name AS role_display_name,
+                    r.level AS role_level,
+                    r.created_at AS role_created_at,
+                    r.updated_at AS role_updated_at,
+                    t.id AS tenant_id,
+                    t.name AS tenant_name,
+                    t.email AS tenant_email,
+                    t.address AS tenant_address,
+                    t.created_at AS tenant_created_at,
+                    t.updated_at AS tenant_updated_at,
+                    t.active AS tenant_active
+                FROM signup_tokens u
+                LEFT JOIN roles r ON u.role_id = r.id
+                LEFT JOIN tenants t ON u.tenant_id = t.id
+                WHERE u.tenant_id = $1;
+            `;
+
+            result = await this.databaseService.query(query, [tenantId]);
+        }
 
         if (result.length == 0) return [];
 
@@ -296,6 +343,15 @@ export class TenantsService {
                 level: row.role_level,
                 createdAt: row.role_created_at,
                 updatedAt: row.role_updated_at,
+            },
+            tenant: {
+                id: row.tenant_id,
+                name: row.tenant_name,
+                email: row.tenant_email,
+                address: row.tenant_address,
+                createdAt: row.tenant_created_at,
+                updatedAt: row.tenant_updated_at,
+                active: row.tenant_active,
             },
         }));
 

@@ -98,9 +98,75 @@ export class UsersService {
     }
 
     async findAll(): Promise<User[]> {
-        const query = 'SELECT * FROM users;';
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at,
+                t.id AS tenant_id,
+                t.name AS tenant_name,
+                t.email AS tenant_email,
+                t.address AS tenant_address,
+                t.created_at AS tenant_created_at,
+                t.updated_at AS tenant_updated_at,
+                t.active AS tenant_active
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            LEFT JOIN 
+                tenants t ON u.tenant_id = t.id;
+        `;
 
-        return await this.databaseService.query(query);
+        const result = await this.databaseService.query(query);
+
+        const users: User[] = result.map((row) => {
+            const tenant: Tenant = {
+                id: row.tenant_id,
+                name: row.tenant_name,
+                email: row.tenant_email,
+                address: row.tenant_address,
+                createdAt: row.tenant_created_at,
+                updatedAt: row.tenant_updated_at,
+                active: row.tenant_active,
+            };
+
+            const role: Role = {
+                id: row.role_id,
+                label: row.role_label,
+                displayName: row.role_display_name,
+                level: row.role_level,
+                createdAt: row.role_created_at,
+                updatedAt: row.role_updated_at,
+            };
+
+            const user: User = {
+                id: row.user_id,
+                email: row.email,
+                username: row.username,
+                password: row.password,
+                name: row.name,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at,
+                active: row.active,
+                role: role,
+                tenant: tenant,
+            };
+
+            return user;
+        });
+
+        return users;
     }
 
     async findOne(userId: number): Promise<User | null> {

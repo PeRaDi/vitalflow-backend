@@ -1,12 +1,15 @@
 import {
     Body,
     Controller,
+    DefaultValuePipe,
     Delete,
     Get,
     HttpStatus,
     Param,
+    ParseIntPipe,
     Patch,
     Post,
+    Query,
     Request,
     Res,
 } from '@nestjs/common';
@@ -584,33 +587,30 @@ export class TenantsController {
         }
     }
 
-    @Get(':tenant_id/invites')
+    @Get('invites')
     @Roles('manager')
     async getInvites(
         @Res() res,
         @Request() req,
-        @Param('tenant_id') tenantIdParam,
+        @Query('tenantId', new DefaultValuePipe(-1), ParseIntPipe)
+        tenantId: number,
     ) {
         try {
             const user: User = req.user;
-            const tenantId = Number(tenantIdParam);
-
-            if (!tenantId)
-                return new ErrorResponse(
-                    'Tenant ID is required.',
-                    HttpStatus.BAD_REQUEST,
-                ).toThrowException();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
-                user.tenant.id !== tenantId
+                (user.tenant.id !== tenantId || tenantId == -1)
             )
                 return new ErrorResponse(
-                    'You are not authorized to view this tenant invites.',
+                    'You are only authorized to view your tenant invites.',
                     HttpStatus.UNAUTHORIZED,
                 ).toThrowException();
 
-            if ((await this.tenantsService.findOne(tenantId)) == null)
+            if (
+                tenantId != -1 &&
+                (await this.tenantsService.findOne(tenantId)) == null
+            )
                 return new ErrorResponse(
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
