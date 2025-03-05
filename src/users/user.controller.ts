@@ -41,13 +41,12 @@ export class UsersController {
     async toggle(
         @Res() res,
         @Request() req,
-        @Param('user_id') userIdParam: string,
+        @Param('user_id') userIdParam: number,
     ) {
         try {
             const user: User = req.user;
-            const userToToggle: User = await this.usersService.findOne(
-                Number(userIdParam),
-            );
+            let userToToggle: User =
+                await this.usersService.findOne(userIdParam);
 
             if (userToToggle.id === user.id)
                 return new ErrorResponse(
@@ -78,14 +77,37 @@ export class UsersController {
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 ).toThrowException();
 
+            userToToggle = await this.usersService.findOne(userIdParam);
+
             return new Response(
                 res,
                 'User successfully toggled.',
                 HttpStatus.OK,
+                { active: userToToggle.active },
             ).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(
                 'An error occurred while toggling the user.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Get()
+    @Roles('admin')
+    async findAll(@Res() res) {
+        try {
+            const users: User[] = await this.usersService.findAll();
+
+            return new Response(
+                res,
+                'Successfully retrieved all users.',
+                HttpStatus.OK,
+                users,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred.',
                 error,
             ).toThrowException();
         }
