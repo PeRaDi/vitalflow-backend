@@ -6,7 +6,7 @@ import { User } from 'src/entities/user.entity';
 export class MailService {
     constructor(private readonly mailerService: MailerService) {}
 
-    async sendForgotPasswordToken(user: User, token: string) {
+    async sendForgotPasswordToken(user: User, token: number) {
         await this.mailerService.sendMail({
             to: user.email,
             subject: 'Forgot Password',

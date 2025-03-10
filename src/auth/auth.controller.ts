@@ -13,6 +13,7 @@ import Response from 'src/responses/response';
 import { UsersService } from 'src/users/users.service';
 import { Public } from './auth.decorator';
 import { AuthService } from './auth.service';
+import { ChangePasswordDto } from './dto/changePassword.dto';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
 import { SigninDto } from './dto/signin.dto';
@@ -105,7 +106,13 @@ export class AuthController {
                     HttpStatus.UNAUTHORIZED,
                 ).toThrowException();
 
-            if (!bcrypt.compare(signinDto.password, user.password))
+            if (!user.active)
+                return new ErrorResponse(
+                    'This account has been deactivated.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+
+            if (!(await bcrypt.compare(signinDto.password, user.password)))
                 return new ErrorResponse(
                     'Unauthorized.',
                     HttpStatus.UNAUTHORIZED,
@@ -165,7 +172,7 @@ export class AuthController {
     }
 
     @Public()
-    @Post('forgotPassword')
+    @Post('forgot-password')
     async forgotPassword(
         @Res() res,
         @Body() forgotPasswordDto: ForgotPasswordDto,
@@ -200,7 +207,7 @@ export class AuthController {
     }
 
     @Public()
-    @Post('resetPassword')
+    @Post('reset-password')
     async resetPassword(
         @Res() res,
         @Body() resetPasswordDto: ResetPasswordDto,
@@ -233,7 +240,10 @@ export class AuthController {
             ).toThrowException();
         }
 
-        if (user.changePasswordToken !== resetPasswordDto.forgotPasswordToken)
+        if (
+            user.changePasswordToken.toString() !==
+            resetPasswordDto.forgotPasswordToken.toString()
+        )
             return new ErrorResponse(
                 'Invalid token.',
                 HttpStatus.BAD_REQUEST,
@@ -256,6 +266,53 @@ export class AuthController {
         } catch (error) {
             return new ErrorResponse(
                 'An error occurred while resetting password.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Post('change-password')
+    async changePassword(
+        @Res() res,
+        @Request() req,
+        @Body() changePasswordDto: ChangePasswordDto,
+    ) {
+        try {
+            const user = req.user;
+
+            const passwordsMatch = await bcrypt.compare(
+                changePasswordDto.currentPassword,
+                user.password,
+            );
+
+            if (!passwordsMatch)
+                return new ErrorResponse(
+                    'Incorrect password.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            if (
+                changePasswordDto.newPassword !==
+                changePasswordDto.confirmNewPassword
+            )
+                return new ErrorResponse(
+                    'Passwords do not match.',
+                    HttpStatus.BAD_REQUEST,
+                ).toThrowException();
+
+            await this.usersService.changePassword(
+                user,
+                changePasswordDto.newPassword,
+            );
+
+            return new Response(
+                res,
+                'Successfully changed password.',
+                HttpStatus.OK,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while changing password.',
                 error,
             ).toThrowException();
         }

@@ -47,7 +47,7 @@ export class AuthService {
     }
 
     async forgotPassword(user: User): Promise<boolean> {
-        const token = Math.floor(100000 + Math.random() * 900000).toString();
+        const token = Math.floor(100000 + Math.random() * 900000);
 
         user.changePasswordToken = token;
         user.changePasswordTokenExpiry = new Date(Date.now() + 300000);

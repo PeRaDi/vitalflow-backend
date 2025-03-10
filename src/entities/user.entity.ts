@@ -7,7 +7,7 @@ export interface User {
     username: string;
     name: string;
     password: string;
-    changePasswordToken?: string;
+    changePasswordToken?: number;
     changePasswordTokenExpiry?: Date;
     role?: Role;
     tenant?: Tenant;

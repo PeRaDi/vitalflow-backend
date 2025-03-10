@@ -5,7 +5,7 @@ export class ResetPasswordDto {
     emailOrUsername: string;
 
     @ApiProperty()
-    forgotPasswordToken: string;
+    forgotPasswordToken: number;
 
     @ApiProperty()
     password: string;

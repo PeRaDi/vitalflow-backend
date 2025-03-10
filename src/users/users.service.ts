@@ -105,6 +105,8 @@ export class UsersService {
                 u.username,
                 u.name,
                 u.password,
+                u.change_password_token,
+                u.change_password_token_expiry,
                 u.created_at,
                 u.updated_at,
                 u.active,
@@ -156,6 +158,8 @@ export class UsersService {
                 username: row.username,
                 password: row.password,
                 name: row.name,
+                changePasswordToken: row.change_password_token,
+                changePasswordTokenExpiry: row.change_password_token_expiry,
                 createdAt: row.created_at,
                 updatedAt: row.updated_at,
                 active: row.active,
@@ -177,6 +181,8 @@ export class UsersService {
                 u.username,
                 u.name,
                 u.password,
+                u.change_password_token,
+                u.change_password_token_expiry,
                 u.created_at,
                 u.updated_at,
                 u.active,
@@ -230,6 +236,8 @@ export class UsersService {
             email: result[0].email,
             username: result[0].username,
             password: result[0].password,
+            changePasswordToken: result[0].change_password_token,
+            changePasswordTokenExpiry: result[0].change_password_token_expiry,
             name: result[0].name,
             createdAt: result[0].created_at,
             updatedAt: result[0].updated_at,
@@ -242,46 +250,244 @@ export class UsersService {
     }
 
     async findByEmail(email: string): Promise<User | null> {
-        const query = 'SELECT * FROM users WHERE email = $1;';
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.change_password_token,
+                u.change_password_token_expiry,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at,
+                t.id AS tenant_id,
+                t.name AS tenant_name,
+                t.email AS tenant_email,
+                t.address AS tenant_address,
+                t.created_at AS tenant_created_at,
+                t.updated_at AS tenant_updated_at,
+                t.active AS tenant_active
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            LEFT JOIN 
+                tenants t ON u.tenant_id = t.id
+            WHERE 
+                u.email = $1;
+        `;
         const result = await this.databaseService.query(query, [email]);
 
-        return result.length > 0 ? result[0] : null;
+        if (result.length == 0) return null;
+
+        const tenant: Tenant = {
+            id: result[0].tenant_id,
+            name: result[0].tenant_name,
+            email: result[0].tenant_email,
+            address: result[0].tenant_address,
+            createdAt: result[0].tenant_created_at,
+            updatedAt: result[0].tenant_updated_at,
+            active: result[0].tenant_active,
+        };
+
+        const role: Role = {
+            id: result[0].role_id,
+            label: result[0].role_label,
+            displayName: result[0].role_display_name,
+            level: result[0].role_level,
+            createdAt: result[0].role_created_at,
+            updatedAt: result[0].role_updated_at,
+        };
+
+        const user: User = {
+            id: result[0].user_id,
+            email: result[0].email,
+            username: result[0].username,
+            password: result[0].password,
+            name: result[0].name,
+            changePasswordToken: result[0].change_password_token,
+            changePasswordTokenExpiry: result[0].change_password_token_expiry,
+            createdAt: result[0].created_at,
+            updatedAt: result[0].updated_at,
+            active: result[0].active,
+            role: role,
+            tenant: tenant,
+        };
+
+        return user;
     }
 
     async findByUsername(username: string): Promise<User | null> {
-        const query = 'SELECT * FROM users WHERE username = $1;';
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.change_password_token,
+                u.change_password_token_expiry,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at,
+                t.id AS tenant_id,
+                t.name AS tenant_name,
+                t.email AS tenant_email,
+                t.address AS tenant_address,
+                t.created_at AS tenant_created_at,
+                t.updated_at AS tenant_updated_at,
+                t.active AS tenant_active
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            LEFT JOIN 
+                tenants t ON u.tenant_id = t.id
+            WHERE 
+                u.username = $1;
+        `;
         const result = await this.databaseService.query(query, [username]);
 
-        return result.length > 0 ? result[0] : null;
+        if (result.length == 0) return null;
+
+        const tenant: Tenant = {
+            id: result[0].tenant_id,
+            name: result[0].tenant_name,
+            email: result[0].tenant_email,
+            address: result[0].tenant_address,
+            createdAt: result[0].tenant_created_at,
+            updatedAt: result[0].tenant_updated_at,
+            active: result[0].tenant_active,
+        };
+
+        const role: Role = {
+            id: result[0].role_id,
+            label: result[0].role_label,
+            displayName: result[0].role_display_name,
+            level: result[0].role_level,
+            createdAt: result[0].role_created_at,
+            updatedAt: result[0].role_updated_at,
+        };
+
+        const user: User = {
+            id: result[0].user_id,
+            email: result[0].email,
+            username: result[0].username,
+            password: result[0].password,
+            name: result[0].name,
+            changePasswordToken: result[0].change_password_token,
+            changePasswordTokenExpiry: result[0].change_password_token_expiry,
+            createdAt: result[0].created_at,
+            updatedAt: result[0].updated_at,
+            active: result[0].active,
+            role: role,
+            tenant: tenant,
+        };
+
+        return user;
     }
 
     async findMany(userIds: number[]): Promise<User[] | null> {
-        const query = 'SELECT * FROM users WHERE id IN ($1);';
+        const query = `
+            SELECT 
+                u.id AS user_id,
+                u.email,
+                u.username,
+                u.name,
+                u.password,
+                u.change_password_token,
+                u.change_password_token_expiry,
+                u.created_at,
+                u.updated_at,
+                u.active,
+                r.id AS role_id,
+                r.label AS role_label,
+                r.display_name AS role_display_name,
+                r.level AS role_level,
+                r.created_at AS role_created_at,
+                r.updated_at AS role_updated_at,
+                t.id AS tenant_id,
+                t.name AS tenant_name,
+                t.email AS tenant_email,
+                t.address AS tenant_address,
+                t.created_at AS tenant_created_at,
+                t.updated_at AS tenant_updated_at,
+                t.active AS tenant_active
+            FROM users u
+            LEFT JOIN 
+                roles r ON u.role_id = r.id
+            LEFT JOIN 
+                tenants t ON u.tenant_id = t.id
+            WHERE 
+                u.id = ANY($1);
+        `;
         const result = await this.databaseService.query(query, [userIds]);
 
         if (result.length == 0) return null;
 
-        const users: User[] = result.map((row) => ({
-            id: row.id,
-            email: row.email,
-            username: row.username,
-            password: row.password,
-            name: row.name,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            active: row.active,
-        }));
+        const users: User[] = result.map((row) => {
+            const tenant: Tenant = {
+                id: row.tenant_id,
+                name: row.tenant_name,
+                email: row.tenant_email,
+                address: row.tenant_address,
+                createdAt: row.tenant_created_at,
+                updatedAt: row.tenant_updated_at,
+                active: row.tenant_active,
+            };
+
+            const role: Role = {
+                id: row.role_id,
+                label: row.role_label,
+                displayName: row.role_display_name,
+                level: row.role_level,
+                createdAt: row.role_created_at,
+                updatedAt: row.role_updated_at,
+            };
+
+            const user: User = {
+                id: row.user_id,
+                email: row.email,
+                username: row.username,
+                password: row.password,
+                name: row.name,
+                changePasswordToken: result[0].change_password_token,
+                changePasswordTokenExpiry:
+                    result[0].change_password_token_expiry,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at,
+                active: row.active,
+                role: role,
+                tenant: tenant,
+            };
+
+            return user;
+        });
 
         return users;
     }
 
     async update(user: User): Promise<User | null> {
         const query =
-            'UPDATE users SET email = $1, username = $2, name = $3, role_id = $4, tenant_id = $5, updated_at = $6 WHERE id = $7 RETURNING *;';
+            'UPDATE users SET email = $1, username = $2, name = $3, change_password_token = $4, change_password_token_expiry = $5, role_id = $6, tenant_id = $7, updated_at = $8 WHERE id = $9 RETURNING *;';
         const params = [
             user.email,
             user.username,
             user.name,
+            user.changePasswordToken,
+            user.changePasswordTokenExpiry,
             user.role.id,
             user.tenant.id,
             new Date(),

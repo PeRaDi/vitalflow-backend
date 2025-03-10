@@ -58,6 +58,20 @@ export class JwtAuthGuard implements CanActivate {
                 ).toThrowException();
             }
 
+            if (user.tenant.id !== null)
+                if (!user.tenant.active)
+                    throw new ErrorResponse(
+                        'This account has been deactivated.',
+                        HttpStatus.UNAUTHORIZED,
+                    ).toThrowException();
+
+            if (!user.active) {
+                throw new ErrorResponse(
+                    'This account has been deactivated.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toThrowException();
+            }
+
             req['user'] = user;
         } catch (error) {
             if (
