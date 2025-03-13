@@ -8,6 +8,7 @@ import {
     Res,
 } from '@nestjs/common';
 import { User } from 'src/entities/user.entity';
+import BenignErrorResponse from 'src/responses/benign-error-response';
 import ErrorResponse from 'src/responses/error-response';
 import Response from 'src/responses/response';
 import { Roles } from 'src/roles/roles.decorator';
@@ -49,30 +50,33 @@ export class UsersController {
                 await this.usersService.findOne(userIdParam);
 
             if (userToToggle.id === user.id)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You cannot toggle your own user.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!userToToggle)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'User not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 (user.tenant.id !== userToToggle.tenant.id ||
                     user.role.level < userToToggle.role.level)
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to toggle this user.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const status = await this.usersService.toggle(userToToggle);
             if (!status)
-                return new ErrorResponse(
+                new ErrorResponse(
                     'An error occurred while toggling the user.',
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 ).toThrowException();

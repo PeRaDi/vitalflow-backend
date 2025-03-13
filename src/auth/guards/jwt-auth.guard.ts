@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
+import BenignErrorResponse from 'src/responses/benign-error-response';
 import ErrorResponse from 'src/responses/error-response';
 import { UsersService } from 'src/users/users.service';
 import { IS_PUBLIC_KEY } from '../auth.decorator';
@@ -29,12 +30,14 @@ export class JwtAuthGuard implements CanActivate {
         if (isPublic) return true;
 
         const req = context.switchToHttp().getRequest();
+        const res = context.switchToHttp().getResponse();
 
         if (!req.headers.cookie) {
-            throw new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Invalid authentication token.',
                 HttpStatus.UNAUTHORIZED,
-            ).toThrowException();
+            ).toHttpResponse();
         }
 
         const token = req.headers.cookie.split('=')[1];
@@ -52,24 +55,27 @@ export class JwtAuthGuard implements CanActivate {
             const user = await this.userService.findOne(payload.sub);
 
             if (!user) {
-                throw new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Invalid authentication token.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
             }
 
             if (user.tenant.id !== null)
                 if (!user.tenant.active)
-                    throw new ErrorResponse(
+                    return new BenignErrorResponse(
+                        res,
                         'This account has been deactivated.',
                         HttpStatus.UNAUTHORIZED,
-                    ).toThrowException();
+                    ).toHttpResponse();
 
             if (!user.active) {
-                throw new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'This account has been deactivated.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
             }
 
             req['user'] = user;
@@ -78,10 +84,11 @@ export class JwtAuthGuard implements CanActivate {
                 error instanceof TokenExpiredError &&
                 req.route.path !== '/auth/signout'
             ) {
-                throw new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Token expired.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
             }
 
             if (

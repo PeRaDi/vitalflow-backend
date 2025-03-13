@@ -16,6 +16,7 @@ import {
 import { Role } from 'src/entities/role.entity';
 import { Tenant } from 'src/entities/tenant.entity';
 import { User } from 'src/entities/user.entity';
+import BenignErrorResponse from 'src/responses/benign-error-response';
 import ErrorResponse from 'src/responses/error-response';
 import Response from 'src/responses/response';
 import { Roles } from 'src/roles/roles.decorator';
@@ -71,10 +72,11 @@ export class TenantsController {
             );
 
             if (!tenant)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'An error occurred while creating a new tenant.',
                     HttpStatus.INTERNAL_SERVER_ERROR,
-                ).toThrowException();
+                ).toHttpResponse();
 
             return new Response(
                 res,
@@ -103,50 +105,56 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to invite users in this tenant.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const emailUser: User = await this.usersService.findByEmail(
                 inviteUserDto.email,
             );
             if (emailUser)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     "There's already an user with this email.",
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const tenant: Tenant = await this.tenantsService.findOne(tenantId);
             if (!tenant)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const role: Role = await this.rolesService.findOneById(
                 inviteUserDto.roleId,
             );
             if (!role)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Role not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!tenant)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             await this.usersService.deleteSignupTokens(inviteUserDto.email);
 
@@ -180,25 +188,28 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     "You are not authorized to view this tenant's contacts.",
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const contacts = await this.tenantsService.getContacts(tenantId);
 
@@ -229,31 +240,35 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to add contacts in this tenant.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (addContactsDto.contacts.length == 0)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'At least one contact is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const contactNumbers: number[] = addContactsDto.contacts.map(
                 (contact) => contact.contact,
@@ -269,7 +284,7 @@ export class TenantsController {
             );
 
             if (!result)
-                return new ErrorResponse(
+                new ErrorResponse(
                     'An error occurred while adding tenant contacts.',
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
@@ -304,31 +319,35 @@ export class TenantsController {
                 .map((contactId) => Number(contactId));
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to delete contacts in this tenant.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!contactsIds)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'At least one contact is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const result = await this.tenantsService.deleteContacts(
                 tenantId,
@@ -336,10 +355,11 @@ export class TenantsController {
             );
 
             if (!result)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Specified contacts not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             return new Response(
                 res,
@@ -369,31 +389,35 @@ export class TenantsController {
             const contactId = Number(contactIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to update contacts in this tenant.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!contactId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Contact ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const contactNumber: number = updateContactDto.contact;
             const contactInfo: string = updateContactDto.info;
@@ -406,10 +430,11 @@ export class TenantsController {
             );
 
             if (!result)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Specified contact not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             return new Response(
                 res,
@@ -436,29 +461,32 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (user.role.label.toLowerCase() !== 'admin')
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to toggle tenants.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             let tenant: Tenant = await this.tenantsService.findOne(tenantId);
 
             if (tenant == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const result = await this.tenantsService.toggle(tenant);
 
             if (!result)
-                return new ErrorResponse(
+                new ErrorResponse(
                     'An error occurred while toggling tenant.',
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
@@ -492,24 +520,27 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (user.role.label.toLowerCase() !== 'admin')
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to update tenants.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             let tenant: Tenant = await this.tenantsService.findOne(tenantId);
 
             if (tenant == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const updatedTenant: Tenant = {
                 ...tenant,
@@ -526,7 +557,7 @@ export class TenantsController {
             const result = await this.tenantsService.update(updatedTenant);
 
             if (!result)
-                return new ErrorResponse(
+                new ErrorResponse(
                     'An error occurred while updating tenant.',
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
@@ -559,25 +590,28 @@ export class TenantsController {
             const tenantId = Number(tenantIdParam);
 
             if (!tenantId)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant ID is required.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 user.role.label.toLowerCase() !== 'admin' &&
                 user.tenant.id !== tenantId
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are not authorized to view this tenant users.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const users = await this.tenantsService.getUsers(tenantId);
 
@@ -610,19 +644,21 @@ export class TenantsController {
                 user.role.label.toLowerCase() !== 'admin' &&
                 (user.tenant.id !== tenantId || tenantId == -1)
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'You are only authorized to view your tenant invites.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 tenantId != -1 &&
                 (await this.tenantsService.findOne(tenantId)) == null
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Tenant not found.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const invites = await this.tenantsService.getInvites(tenantId);
 

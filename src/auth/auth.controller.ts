@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { MailService } from 'src/mail/mail.service';
+import BenignErrorResponse from 'src/responses/benign-error-response';
 import ErrorResponse from 'src/responses/error-response';
 import Response from 'src/responses/response';
 import { UsersService } from 'src/users/users.service';
@@ -35,26 +36,29 @@ export class AuthController {
             (await this.usersService.findByUsername(signupDto.username));
 
         if (user)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'User already exists.',
                 HttpStatus.CONFLICT,
-            ).toThrowException();
+            ).toHttpResponse();
 
         if (signupDto.password !== signupDto.confirmPassword)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Passwords do not match.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
 
         const signupToken = await this.authService.findSignupToken(
             signupDto.signupToken,
         );
 
         if (!signupToken)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Invalid signup token.',
                 HttpStatus.UNAUTHORIZED,
-            ).toThrowException();
+            ).toHttpResponse();
 
         try {
             const user = await this.authService.signup(
@@ -101,22 +105,25 @@ export class AuthController {
                 ));
 
             if (!user)
-                return new ErrorResponse(
-                    'Unauthorized.',
+                return new BenignErrorResponse(
+                    res,
+                    "This account doesn't exist.",
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!user.active)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'This account has been deactivated.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (!(await bcrypt.compare(signinDto.password, user.password)))
-                return new ErrorResponse(
-                    'Unauthorized.',
+                return new BenignErrorResponse(
+                    res,
+                    'Invalid password.',
                     HttpStatus.UNAUTHORIZED,
-                ).toThrowException();
+                ).toHttpResponse();
 
             const token = await this.authService.signin(user);
 
@@ -163,7 +170,6 @@ export class AuthController {
                 HttpStatus.OK,
             ).toHttpResponse();
         } catch (error) {
-            console.log(error);
             return new ErrorResponse(
                 'An error occurred while signing out.',
                 error,
@@ -185,10 +191,11 @@ export class AuthController {
                 forgotPasswordDto.emailOrUsername,
             ));
         if (!user)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'User does not exist.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
 
         try {
             const status = await this.authService.forgotPassword(user);
@@ -221,33 +228,37 @@ export class AuthController {
             ));
 
         if (!user)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'User does not exist.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
 
         if (resetPasswordDto.password !== resetPasswordDto.confirmPassword)
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Passwords do not match.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
 
         if (user.changePasswordTokenExpiry < new Date()) {
             await this.usersService.clearPasswordResetToken(user);
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Token has expired.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
         }
 
         if (
             user.changePasswordToken.toString() !==
             resetPasswordDto.forgotPasswordToken.toString()
         )
-            return new ErrorResponse(
+            return new BenignErrorResponse(
+                res,
                 'Invalid token.',
                 HttpStatus.BAD_REQUEST,
-            ).toThrowException();
+            ).toHttpResponse();
 
         try {
             await this.usersService.changePassword(
@@ -286,19 +297,21 @@ export class AuthController {
             );
 
             if (!passwordsMatch)
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Incorrect password.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             if (
                 changePasswordDto.newPassword !==
                 changePasswordDto.confirmNewPassword
             )
-                return new ErrorResponse(
+                return new BenignErrorResponse(
+                    res,
                     'Passwords do not match.',
                     HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                ).toHttpResponse();
 
             await this.usersService.changePassword(
                 user,
