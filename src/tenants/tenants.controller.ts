@@ -25,6 +25,7 @@ import { AddContactsDto } from './dto/add-contacts.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantsService } from './tenants.service';
 
 @Controller('tenants')
@@ -484,7 +485,7 @@ export class TenantsController {
         @Res() res,
         @Request() req,
         @Param('tenant_id') tenantIdParam,
-        @Body() createTenantDto: CreateTenantDto,
+        @Body() updateTenantDto: UpdateTenantDto,
     ) {
         try {
             const user: User = req.user;
@@ -510,12 +511,19 @@ export class TenantsController {
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
 
-            if (createTenantDto.name) tenant.name = createTenantDto.name;
-            if (createTenantDto.email) tenant.email = createTenantDto.email;
-            if (createTenantDto.address)
-                tenant.address = createTenantDto.address;
+            const updatedTenant: Tenant = {
+                ...tenant,
+                name: updateTenantDto.name || tenant.name,
+                address: updateTenantDto.address || tenant.address,
+                email: updateTenantDto.email || tenant.email,
+                active: Object.getOwnPropertyNames(updateTenantDto).includes(
+                    'active',
+                )
+                    ? updateTenantDto.active
+                    : tenant.active,
+            };
 
-            const result = await this.tenantsService.update(tenant);
+            const result = await this.tenantsService.update(updatedTenant);
 
             if (!result)
                 return new ErrorResponse(
