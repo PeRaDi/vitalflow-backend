@@ -97,7 +97,6 @@ export class TenantsService {
     }
 
     async update(tenant: Tenant): Promise<Tenant | null> {
-        console.log('peradi', tenant);
         const query =
             'UPDATE tenants SET name = $1, email = $2, address = $3, active = $4, updated_at = $5 WHERE id = $6 RETURNING *;';
         const params = [

@@ -37,6 +37,7 @@ export class TenantsController {
         private readonly rolesService: RolesService,
     ) {}
 
+    //#region GET
     @Get('get')
     @Roles('admin')
     async get(@Res() res) {
@@ -57,6 +58,157 @@ export class TenantsController {
         }
     }
 
+    @Get(':tenant_id/contacts')
+    async getContacts(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new BenignErrorResponse(
+                    res,
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
+
+            if (
+                user.role.label.toLowerCase() !== 'admin' &&
+                user.tenant.id !== tenantId
+            )
+                return new BenignErrorResponse(
+                    res,
+                    "You are not authorized to view this tenant's contacts.",
+                    HttpStatus.UNAUTHORIZED,
+                ).toHttpResponse();
+
+            if ((await this.tenantsService.findOne(tenantId)) == null)
+                return new BenignErrorResponse(
+                    res,
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
+
+            const contacts = await this.tenantsService.getContacts(tenantId);
+
+            return new Response(
+                res,
+                'Tenant contancts successfully retrieved.',
+                HttpStatus.OK,
+                contacts,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Get(':tenant_id/users')
+    @Roles('manager')
+    async getUsers(
+        @Res() res,
+        @Request() req,
+        @Param('tenant_id') tenantIdParam,
+    ) {
+        try {
+            const user: User = req.user;
+            const tenantId = Number(tenantIdParam);
+
+            if (!tenantId)
+                return new BenignErrorResponse(
+                    res,
+                    'Tenant ID is required.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
+
+            if (
+                user.role.label.toLowerCase() !== 'admin' &&
+                user.tenant.id !== tenantId
+            )
+                return new BenignErrorResponse(
+                    res,
+                    'You are not authorized to view this tenant users.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toHttpResponse();
+
+            if ((await this.tenantsService.findOne(tenantId)) == null)
+                return new BenignErrorResponse(
+                    res,
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
+
+            const users = await this.tenantsService.getUsers(tenantId);
+
+            return new Response(
+                res,
+                'Tenant users successfully retrieved.',
+                HttpStatus.OK,
+                users,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Get('invites')
+    @Roles('manager')
+    async getInvites(
+        @Res() res,
+        @Request() req,
+        @Query('tenantId', new DefaultValuePipe(-1), ParseIntPipe)
+        tenantId: number,
+    ) {
+        try {
+            const user: User = req.user;
+
+            if (
+                user.role.label.toLowerCase() !== 'admin' &&
+                (user.tenant.id !== tenantId || tenantId == -1)
+            )
+                return new BenignErrorResponse(
+                    res,
+                    'You are only authorized to view your tenant invites.',
+                    HttpStatus.UNAUTHORIZED,
+                ).toHttpResponse();
+
+            if (
+                tenantId != -1 &&
+                (await this.tenantsService.findOne(tenantId)) == null
+            )
+                return new BenignErrorResponse(
+                    res,
+                    'Tenant not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
+
+            const invites = await this.tenantsService.getInvites(tenantId);
+
+            return new Response(
+                res,
+                'Tenant invites successfully retrieved.',
+                HttpStatus.OK,
+                invites,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving tenants.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    //#endregion
+
+    //#region POST
     @Post('create')
     @Roles('admin')
     async create(
@@ -177,56 +329,6 @@ export class TenantsController {
         }
     }
 
-    @Get(':tenant_id/contacts')
-    async getContacts(
-        @Res() res,
-        @Request() req,
-        @Param('tenant_id') tenantIdParam,
-    ) {
-        try {
-            const user: User = req.user;
-            const tenantId = Number(tenantIdParam);
-
-            if (!tenantId)
-                return new BenignErrorResponse(
-                    res,
-                    'Tenant ID is required.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            if (
-                user.role.label.toLowerCase() !== 'admin' &&
-                user.tenant.id !== tenantId
-            )
-                return new BenignErrorResponse(
-                    res,
-                    "You are not authorized to view this tenant's contacts.",
-                    HttpStatus.UNAUTHORIZED,
-                ).toHttpResponse();
-
-            if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new BenignErrorResponse(
-                    res,
-                    'Tenant not found.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            const contacts = await this.tenantsService.getContacts(tenantId);
-
-            return new Response(
-                res,
-                'Tenant contancts successfully retrieved.',
-                HttpStatus.OK,
-                contacts,
-            ).toHttpResponse();
-        } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving tenants.',
-                error,
-            ).toThrowException();
-        }
-    }
-
     @Post(':tenant_id/contacts')
     @Roles('manager')
     async addContacts(
@@ -302,77 +404,9 @@ export class TenantsController {
             ).toThrowException;
         }
     }
+    //#endregion
 
-    @Delete(':tenant_id/contacts/:contacts_ids')
-    @Roles('manager')
-    async deleteContacts(
-        @Res() res,
-        @Request() req,
-        @Param('tenant_id') tenantIdParam,
-        @Param('contacts_ids') contactsIdsParam,
-    ) {
-        try {
-            const user: User = req.user;
-            const tenantId = Number(tenantIdParam);
-            const contactsIds = contactsIdsParam
-                .split(',')
-                .map((contactId) => Number(contactId));
-
-            if (!tenantId)
-                return new BenignErrorResponse(
-                    res,
-                    'Tenant ID is required.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            if (
-                user.role.label.toLowerCase() !== 'admin' &&
-                user.tenant.id !== tenantId
-            )
-                return new BenignErrorResponse(
-                    res,
-                    'You are not authorized to delete contacts in this tenant.',
-                    HttpStatus.UNAUTHORIZED,
-                ).toHttpResponse();
-
-            if ((await this.tenantsService.findOne(tenantId)) == null)
-                return new BenignErrorResponse(
-                    res,
-                    'Tenant not found.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            if (!contactsIds)
-                return new BenignErrorResponse(
-                    res,
-                    'At least one contact is required.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            const result = await this.tenantsService.deleteContacts(
-                tenantId,
-                contactsIds,
-            );
-
-            if (!result)
-                return new BenignErrorResponse(
-                    res,
-                    'Specified contacts not found.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            return new Response(
-                res,
-                'Tenant contacts successfully deleted.',
-                HttpStatus.OK,
-            ).toHttpResponse();
-        } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while deleting tenant contacts.',
-                error,
-            ).toThrowException();
-        }
-    }
+    //#region PATCH
 
     @Patch(':tenant_id/contacts/:contacts_id/')
     @Roles('manager')
@@ -577,17 +611,23 @@ export class TenantsController {
             ).toThrowException();
         }
     }
+    //#endregion
 
-    @Get(':tenant_id/users')
+    //#region DELETE
+    @Delete(':tenant_id/contacts/:contacts_ids')
     @Roles('manager')
-    async getUsers(
+    async deleteContacts(
         @Res() res,
         @Request() req,
         @Param('tenant_id') tenantIdParam,
+        @Param('contacts_ids') contactsIdsParam,
     ) {
         try {
             const user: User = req.user;
             const tenantId = Number(tenantIdParam);
+            const contactsIds = contactsIdsParam
+                .split(',')
+                .map((contactId) => Number(contactId));
 
             if (!tenantId)
                 return new BenignErrorResponse(
@@ -602,7 +642,7 @@ export class TenantsController {
             )
                 return new BenignErrorResponse(
                     res,
-                    'You are not authorized to view this tenant users.',
+                    'You are not authorized to delete contacts in this tenant.',
                     HttpStatus.UNAUTHORIZED,
                 ).toHttpResponse();
 
@@ -613,66 +653,36 @@ export class TenantsController {
                     HttpStatus.BAD_REQUEST,
                 ).toHttpResponse();
 
-            const users = await this.tenantsService.getUsers(tenantId);
-
-            return new Response(
-                res,
-                'Tenant users successfully retrieved.',
-                HttpStatus.OK,
-                users,
-            ).toHttpResponse();
-        } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving tenants.',
-                error,
-            ).toThrowException();
-        }
-    }
-
-    @Get('invites')
-    @Roles('manager')
-    async getInvites(
-        @Res() res,
-        @Request() req,
-        @Query('tenantId', new DefaultValuePipe(-1), ParseIntPipe)
-        tenantId: number,
-    ) {
-        try {
-            const user: User = req.user;
-
-            if (
-                user.role.label.toLowerCase() !== 'admin' &&
-                (user.tenant.id !== tenantId || tenantId == -1)
-            )
+            if (!contactsIds)
                 return new BenignErrorResponse(
                     res,
-                    'You are only authorized to view your tenant invites.',
-                    HttpStatus.UNAUTHORIZED,
-                ).toHttpResponse();
-
-            if (
-                tenantId != -1 &&
-                (await this.tenantsService.findOne(tenantId)) == null
-            )
-                return new BenignErrorResponse(
-                    res,
-                    'Tenant not found.',
+                    'At least one contact is required.',
                     HttpStatus.BAD_REQUEST,
                 ).toHttpResponse();
 
-            const invites = await this.tenantsService.getInvites(tenantId);
+            const result = await this.tenantsService.deleteContacts(
+                tenantId,
+                contactsIds,
+            );
+
+            if (!result)
+                return new BenignErrorResponse(
+                    res,
+                    'Specified contacts not found.',
+                    HttpStatus.BAD_REQUEST,
+                ).toHttpResponse();
 
             return new Response(
                 res,
-                'Tenant invites successfully retrieved.',
+                'Tenant contacts successfully deleted.',
                 HttpStatus.OK,
-                invites,
             ).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(
-                'An error occurred while retrieving tenants.',
+                'An error occurred while deleting tenant contacts.',
                 error,
             ).toThrowException();
         }
     }
+    //#endregion
 }
