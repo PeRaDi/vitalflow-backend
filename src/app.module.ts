@@ -11,6 +11,7 @@ import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
+import { ItemsModule } from './items/items.module';
 
 @Module({
     imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
         RolesModule,
         ManagerModule,
         RabbitMQModule,
+        ItemsModule,
     ],
     controllers: [AppController],
     providers: [AppService],

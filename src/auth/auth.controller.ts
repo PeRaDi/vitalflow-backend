@@ -127,18 +127,12 @@ export class AuthController {
 
             const token = await this.authService.signin(user);
 
-            res.cookie('access_token', token, {
-                httpOnly: true,
-                secure: process.env.ENV_TYPE === 'production',
-                sameSite: 'strict',
-                path: '/',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-            });
-
             return new Response(
                 res,
                 'Successfully signed in.',
                 HttpStatus.OK,
+                null,
+                token,
             ).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(

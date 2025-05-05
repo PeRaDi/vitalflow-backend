@@ -25,6 +25,7 @@ export class UsersController {
     //#region GET
 
     @Get('info')
+    @Roles('user')
     async info(@Res() res, @Request() req) {
         try {
             const user: User = req.user;

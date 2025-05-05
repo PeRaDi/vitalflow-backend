@@ -14,7 +14,6 @@ async function bootstrap() {
         origin: [process.env.FRONTEND_URL],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization'],
-        accessControlAllowOrigin: process.env.FRONTEND_URL,
         credentials: true,
         optionsSuccessStatus: 204,
     });
