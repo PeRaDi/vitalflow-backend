@@ -148,24 +148,6 @@ export class UsersController {
                     HttpStatus.BAD_REQUEST,
                 ).toHttpResponse();
 
-            if (userToChangeRole.id === user.id)
-                return new BenignErrorResponse(
-                    res,
-                    'You cannot change your own role.',
-                    HttpStatus.BAD_REQUEST,
-                ).toHttpResponse();
-
-            if (
-                user.role.label !== 'ADMIN' &&
-                (user.tenant.id !== userToChangeRole.tenant.id ||
-                    user.role.level < userToChangeRole.role.level)
-            )
-                return new BenignErrorResponse(
-                    res,
-                    "You are not authorized to change this user's role.",
-                    HttpStatus.UNAUTHORIZED,
-                ).toHttpResponse();
-
             let role;
             if (isNaN(Number.parseInt(roleParam)))
                 role = await this.rolesService.findOneByLabel(roleParam);
@@ -178,18 +160,28 @@ export class UsersController {
                     HttpStatus.BAD_REQUEST,
                 ).toHttpResponse();
 
-            if (
-                role.level > user.role.level ||
-                (role.level === 0 && user.role.level !== 0)
-            )
+            if (userToChangeRole.id === user.id)
                 return new BenignErrorResponse(
                     res,
-                    'You cannot change the user to a role with a higher level than yours.',
+                    'You cannot change your own role.',
                     HttpStatus.BAD_REQUEST,
                 ).toHttpResponse();
 
-            userToChangeRole.role = role;
+            if (user.role.label !== 'ADMIN') {
+                if (
+                    user.tenant.id !== userToChangeRole.tenant.id ||
+                    user.role.level < userToChangeRole.role.level ||
+                    role.label === 'ADMIN'
+                ) {
+                    return new BenignErrorResponse(
+                        res,
+                        "You are not authorized to change this user's role.",
+                        HttpStatus.UNAUTHORIZED,
+                    ).toHttpResponse();
+                }
+            }
 
+            userToChangeRole.role = role;
             const status = await this.usersService.update(userToChangeRole);
 
             if (!status)
