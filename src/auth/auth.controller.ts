@@ -127,13 +127,9 @@ export class AuthController {
 
             const token = await this.authService.signin(user);
 
-            return new Response(
-                res,
-                'Successfully signed in.',
-                HttpStatus.OK,
-                null,
-                token,
-            ).toHttpResponse();
+            return new Response(res, 'Successfully signed in.', HttpStatus.OK, {
+                access_token: token,
+            }).toHttpResponse();
         } catch (error) {
             return new ErrorResponse(
                 'An error occurred while signing in.',
@@ -149,14 +145,6 @@ export class AuthController {
             const token = authHeader?.split(' ')[1];
 
             await this.authService.signout(token);
-
-            res.cookie('access_token', null, {
-                httpOnly: true,
-                secure: process.env.ENV_TYPE === 'production',
-                sameSite: 'strict',
-                path: '/',
-                maxAge: -1,
-            });
 
             return new Response(
                 res,

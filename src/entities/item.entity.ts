@@ -8,4 +8,5 @@ export interface Item {
     createdAt: Date;
     updatedAt: Date;
     criticality: CriticalityLevel;
+    active: boolean;
 }

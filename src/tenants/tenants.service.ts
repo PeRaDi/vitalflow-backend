@@ -146,7 +146,11 @@ export class TenantsService {
         const result = await this.databaseService.query(query, params);
         if (result.length === 0) return false;
 
-        this.mailService.sendSignupInviteEmail(email, '[CHANGETHIS]', token);
+        this.mailService.sendSignupInviteEmail(
+            email,
+            process.env.FRONTEND_URL,
+            token,
+        );
         return true;
     }
 

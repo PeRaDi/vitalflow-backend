@@ -32,7 +32,8 @@ export class JwtAuthGuard implements CanActivate {
         const req = context.switchToHttp().getRequest();
         const res = context.switchToHttp().getResponse();
 
-        if (!req.headers.cookie) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return new BenignErrorResponse(
                 res,
                 'Invalid authentication token.',
@@ -40,8 +41,7 @@ export class JwtAuthGuard implements CanActivate {
             ).toHttpResponse();
         }
 
-        const token = req.headers.cookie.split('=')[1];
-        req.headers.authorization = `Bearer ${token}`;
+        const token = authHeader.split(' ')[1];
 
         const secretPayload = {
             secret: this.configService.get('JWT_SECRET'),

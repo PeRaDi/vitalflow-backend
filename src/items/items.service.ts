@@ -21,6 +21,7 @@ export class ItemsService {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             criticality: row.criticality,
+            active: row.active,
         }));
     }
 
@@ -42,6 +43,7 @@ export class ItemsService {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             criticality: row.criticality,
+            active: row.active,
         };
     }
 
@@ -66,6 +68,42 @@ export class ItemsService {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             criticality: row.criticality,
+            active: row.active,
         };
+    }
+
+    async update(
+        tenantId: number,
+        id: number,
+        name: string,
+        description: string,
+        criticality: CriticalityLevel,
+    ): Promise<Item> {
+        const result = await this.databaseService.query(
+            'UPDATE items SET name = $1, description = $2, criticality = $3 WHERE id = $4 AND tenant_id = $5 RETURNING *',
+            [name, description, criticality, id, tenantId],
+        );
+
+        const row = result[0];
+
+        return {
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            tenantId: row.tenant_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            criticality: row.criticality,
+            active: row.active,
+        };
+    }
+
+    async toggle(item: Item): Promise<boolean> {
+        const query =
+            'UPDATE items SET active = NOT active, updated_at = $1 WHERE id = $2 RETURNING *';
+        const params = [new Date(), item.id];
+
+        const result = await this.databaseService.query(query, params);
+        return result.length > 0;
     }
 }

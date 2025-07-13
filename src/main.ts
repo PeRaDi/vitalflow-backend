@@ -1,17 +1,20 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { DatabaseService } from './db/database.service';
 import { initDb } from './db/init-db';
+import { rabbitMQConfig } from './rabbitmq/rabbitmq.config';
 import { UsersService } from './users/users.service';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     const dbService = app.get(DatabaseService);
     const userService = app.get(UsersService);
+    const configService = app.get(ConfigService);
 
     app.enableCors({
-        origin: [process.env.FRONTEND_URL],
+        origin: ['http://localhost:3000', 'http://vital-flow.live:3000'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
@@ -32,6 +35,8 @@ async function bootstrap() {
     const dbStatus = await initDb(dbService, userService, process.env);
     console.log(`Database initialized: ${dbStatus}`);
 
+    app.connectMicroservice(rabbitMQConfig(configService));
+    await app.startAllMicroservices();
     await app.listen(process.env.PORT ?? 3000);
 }
 
