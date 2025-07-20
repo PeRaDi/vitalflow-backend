@@ -14,9 +14,9 @@ import { Item } from 'src/entities/item.entity';
 import ErrorResponse from 'src/responses/error-response';
 import Response from 'src/responses/response';
 import { Roles } from 'src/roles/roles.decorator';
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
-import { ItemsService } from './items.service';
+import { CreateItemDto } from '../dto/create-item.dto';
+import { UpdateItemDto } from '../dto/update-item.dto';
+import { ItemsService } from '../services/items.service';
 
 @Controller('items')
 export class ItemsController {

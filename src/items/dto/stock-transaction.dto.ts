@@ -1,9 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TransactionType } from '../types/transaction-type.enum';
 export class StockTransactionDto {
     @ApiProperty()
-    stock: number;
+    quantity: number;
 
     @ApiProperty()
-    transactionType: TransactionType;
+    transactionType: number;
 }

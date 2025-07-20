@@ -5,7 +5,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './db/database.module';
-import { ItemStockModule } from './item_stock/item-stock.module';
 import { ItemsModule } from './items/items.module';
 import { MailModule } from './mail/mail.module';
 import { ManagerModule } from './manager/manager.module';
@@ -29,7 +28,6 @@ import { UsersModule } from './users/users.module';
         ManagerModule,
         RabbitMQModule,
         ItemsModule,
-        ItemStockModule,
     ],
     controllers: [AppController],
     providers: [AppService],
