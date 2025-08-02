@@ -9,4 +9,10 @@ export class CreateItemDto {
 
     @ApiProperty()
     criticality: CriticalityLevel;
+
+    @ApiProperty()
+    frequentOrder: boolean;
+
+    @ApiProperty()
+    leadTime: number;
 }

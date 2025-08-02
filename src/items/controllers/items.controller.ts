@@ -62,6 +62,8 @@ export class ItemsController {
                 createItemDto.name,
                 createItemDto.description,
                 createItemDto.criticality,
+                createItemDto.frequentOrder,
+                createItemDto.leadTime,
             );
 
             return new Response(
@@ -95,7 +97,9 @@ export class ItemsController {
                 itemId,
                 updateItemDto.name,
                 updateItemDto.description,
+                updateItemDto.frequentOrder,
                 updateItemDto.criticality,
+                updateItemDto.leadTime,
             );
 
             return new Response(

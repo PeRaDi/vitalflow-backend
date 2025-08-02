@@ -5,6 +5,7 @@ import {
     HttpStatus,
     Param,
     Patch,
+    Put,
     Query,
     Req,
     Res,
@@ -166,6 +167,38 @@ export class TransactionsController {
         }
     }
 
+    @Get(':item_id/jobs')
+    @Roles('manager')
+    async getJobs(@Req() req, @Res() res, @Param('item_id') item_id: string) {
+        try {
+            const itemId = Number(item_id);
+            const user = req.user;
+
+            const item = await this.itemsService.findOne(itemId);
+            if (!item || item.tenantId !== user.tenant.id) {
+                return new BenignErrorResponse(
+                    res,
+                    'Item not found.',
+                    HttpStatus.NOT_FOUND,
+                ).toHttpResponse();
+            }
+
+            const pendingJobs = await this.transactionsService.getJobs(item.id);
+
+            return new Response(
+                res,
+                'Jobs retrieved successfully.',
+                HttpStatus.OK,
+                pendingJobs,
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while retrieving jobs.',
+                error,
+            ).toThrowException();
+        }
+    }
+
     //#endregion
 
     //#region POST
@@ -193,7 +226,61 @@ export class TransactionsController {
     //#endregion
 
     //#region PUT
+    @Put(':item_id/train')
+    @Roles('manager')
+    async train(@Res() res, @Param('item_id') item_id: string) {
+        try {
+            const itemId = Number(item_id);
+            const result = await this.transactionsService.pushAIJob(
+                itemId,
+                'train',
+            );
 
+            return new Response(
+                res,
+                'Training successfully initiated.',
+                HttpStatus.OK,
+                { jobId: result },
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while initiating training.',
+                error,
+            ).toThrowException();
+        }
+    }
+
+    @Put(':item_id/forecast')
+    @Roles('manager')
+    async forecast(@Res() res, @Param('item_id') item_id: string) {
+        try {
+            const itemId = Number(item_id);
+            const result = await this.transactionsService.pushAIJob(
+                itemId,
+                'forecast',
+            );
+
+            if (!result) {
+                return new BenignErrorResponse(
+                    res,
+                    'Item model not found.',
+                    HttpStatus.NOT_FOUND,
+                ).toHttpResponse();
+            }
+
+            return new Response(
+                res,
+                'Forecasting successfully initiated.',
+                HttpStatus.OK,
+                { jobId: result },
+            ).toHttpResponse();
+        } catch (error) {
+            return new ErrorResponse(
+                'An error occurred while initiating forecasting.',
+                error,
+            ).toThrowException();
+        }
+    }
     //#endregion
 
     //#region PATCH

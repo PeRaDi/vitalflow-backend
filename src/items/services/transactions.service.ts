@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/db/database.service';
 import { ItemsService } from 'src/items/services/items.service';
+import { Job } from 'src/rabbitmq/interfaces/job.interface';
 import { RabbitMQService } from 'src/rabbitmq/rabbitmq.service';
 import { UsersService } from 'src/users/users.service';
 import { ItemConsumption } from '../interfaces/item-consumption.interface';
@@ -134,6 +135,31 @@ export class TransactionsService {
         }));
     }
 
+    async getTimeframeHistory(
+        itemId: number,
+        startDate: Date,
+        endDate: Date,
+    ): Promise<ItemConsumption[]> {
+        const result = await this.databaseService.query(
+            `SELECT
+                created_at::date AS date,
+                SUM(quantity) AS quantity
+            FROM stock_transactions
+            WHERE item_id = $1
+                AND transaction_type_id = 2
+                AND created_at >= $2
+                AND created_at <= $3
+            GROUP BY date
+            ORDER BY date DESC;`,
+            [itemId, startDate, endDate],
+        );
+
+        return result.map((row) => ({
+            date: new Date(row.date),
+            quantity: Number(row.quantity),
+        }));
+    }
+
     async getUserLogs(
         itemId: number,
         limit: number = 20,
@@ -204,13 +230,24 @@ export class TransactionsService {
         return true;
     }
 
-    async train(itemId: number): Promise<string> {
+    async pushAIJob(
+        itemId: number,
+        jobType: 'train' | 'forecast',
+    ): Promise<string> {
         const item = await this.itemsService.findOne(itemId);
         if (!item) {
             throw new Error('Item not found.');
         }
-
-        const jobId = await this.rabbitMQService.insertTrainTask(itemId);
+        let jobId: string;
+        if (jobType === 'train') {
+            jobId = await this.rabbitMQService.insertTrainTask(itemId);
+        } else if (jobType === 'forecast') {
+            jobId = await this.rabbitMQService.insertForecastTask(itemId);
+        }
         return jobId;
+    }
+
+    async getJobs(itemId: number): Promise<Job[]> {
+        return this.rabbitMQService.findAllJobs(itemId);
     }
 }

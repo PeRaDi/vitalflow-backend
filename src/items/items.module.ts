@@ -11,6 +11,6 @@ import { TransactionsService } from './services/transactions.service';
     controllers: [ItemsController, TransactionsController],
     imports: [DatabaseModule, RabbitMQModule, UsersModule],
     providers: [ItemsService, TransactionsService],
-    exports: [ItemsService],
+    exports: [ItemsService, TransactionsService],
 })
 export class ItemsModule {}

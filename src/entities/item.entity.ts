@@ -4,6 +4,8 @@ export interface Item {
     id: number;
     name: string;
     description: string;
+    frequentOrder: boolean;
+    leadTime: number;
     tenantId: number;
     createdAt: Date;
     updatedAt: Date;
