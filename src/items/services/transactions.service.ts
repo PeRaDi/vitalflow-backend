@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/db/database.service';
-import { ItemsService } from 'src/items/services/items.service';
-import { Job } from 'src/rabbitmq/interfaces/job.interface';
-import { RabbitMQService } from 'src/rabbitmq/rabbitmq.service';
-import { UsersService } from 'src/users/users.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+import { DatabaseService } from '../../db/database.service';
+import { ItemsService } from '../../items/services/items.service';
+import { Job } from '../../rabbitmq/interfaces/job.interface';
+import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
+import { UsersService } from '../../users/users.service';
+
 import { ItemConsumption } from '../interfaces/item-consumption.interface';
 import { PaginatedUserLogs } from '../interfaces/paginated-user-logs.interface';
 import { StockedItemOverview } from '../interfaces/stocked-item-overview.interface';
@@ -12,6 +15,7 @@ import { TransactionType } from '../types/transaction-type.enum';
 @Injectable()
 export class TransactionsService {
     constructor(
+        private readonly eventEmitter: EventEmitter2,
         private readonly databaseService: DatabaseService,
         private readonly itemsService: ItemsService,
         private readonly rabbitMQService: RabbitMQService,
@@ -46,9 +50,7 @@ export class TransactionsService {
             [itemIds],
         );
 
-        const stockMap = new Map<number, number>(
-            stocks.map((row) => [row.item_id, Number(row.current_stock)]),
-        );
+        const stockMap = new Map<number, number>(stocks.map((row) => [row.item_id, Number(row.current_stock)]));
 
         return items.map((item) => ({
             itemId: item.id,
@@ -112,10 +114,7 @@ export class TransactionsService {
         };
     }
 
-    async getHistory(
-        itemId: number,
-        limit?: number,
-    ): Promise<ItemConsumption[]> {
+    async getHistory(itemId: number, limit?: number): Promise<ItemConsumption[]> {
         const result = await this.databaseService.query(
             `SELECT
                 created_at::date AS date,
@@ -135,11 +134,7 @@ export class TransactionsService {
         }));
     }
 
-    async getTimeframeHistory(
-        itemId: number,
-        startDate: Date,
-        endDate: Date,
-    ): Promise<ItemConsumption[]> {
+    async getTimeframeHistory(itemId: number, startDate: Date, endDate: Date): Promise<ItemConsumption[]> {
         const result = await this.databaseService.query(
             `SELECT
                 created_at::date AS date,
@@ -160,11 +155,7 @@ export class TransactionsService {
         }));
     }
 
-    async getUserLogs(
-        itemId: number,
-        limit: number = 20,
-        cursor?: string,
-    ): Promise<PaginatedUserLogs> {
+    async getUserLogs(itemId: number, limit: number = 20, cursor?: string): Promise<PaginatedUserLogs> {
         let query = `SELECT
                 user_id,
                 transaction_type_id AS "transactionType",
@@ -187,19 +178,13 @@ export class TransactionsService {
 
         const hasNext = result.length > limit;
         const data = hasNext ? result.slice(0, limit) : result;
-        const nextCursor =
-            hasNext && data.length > 0
-                ? data[data.length - 1].date.toISOString()
-                : undefined;
+        const nextCursor = hasNext && data.length > 0 ? data[data.length - 1].date.toISOString() : undefined;
 
         const transformedData = await Promise.all(
             data.map(async (row) => ({
                 userId: row.user_id,
                 username: (await this.userService.findOne(row.user_id)).name,
-                transactionType:
-                    row.transactionType === 1
-                        ? ('IN' as const)
-                        : ('OUT' as const),
+                transactionType: row.transactionType === 1 ? ('IN' as const) : ('OUT' as const),
                 quantity: Number(row.quantity),
                 date: new Date(row.date).toISOString(),
             })),
@@ -227,13 +212,14 @@ export class TransactionsService {
             [userId, itemId, stock, transactionType],
         );
 
+        if (transactionType === TransactionType.OUT) {
+            this.eventEmitter.emit('item.consumed', { itemId });
+        }
+
         return true;
     }
 
-    async pushAIJob(
-        itemId: number,
-        jobType: 'train' | 'forecast',
-    ): Promise<string> {
+    async pushAIJob(itemId: number, jobType: 'train' | 'forecast'): Promise<string> {
         const item = await this.itemsService.findOne(itemId);
         if (!item) {
             throw new Error('Item not found.');

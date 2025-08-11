@@ -1,26 +1,26 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { DatabaseService } from 'src/db/database.service';
-import { ItemConsumption } from 'src/items/interfaces/item-consumption.interface';
-import { ItemsService } from 'src/items/services/items.service';
-import { TransactionsService } from 'src/items/services/transactions.service';
+
+import { DatabaseService } from '../db/database.service';
+import { ItemConsumption } from '../items/interfaces/item-consumption.interface';
+import { ItemsService } from '../items/services/items.service';
+import { TransactionsService } from '../items/services/transactions.service';
+import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+
 import { AiMonitorService } from './ai-monitor.service';
 
 @Injectable()
-export class AiMonitorCron implements OnModuleInit {
+export class AiMonitorCron {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly aiMonitorService: AiMonitorService,
         private readonly itemsService: ItemsService,
         private readonly transactionsService: TransactionsService,
+        private readonly rabbitMQService: RabbitMQService,
     ) {}
 
-    onModuleInit() {
-        this.handleCron();
-    }
-
     @Cron('0 6 * * *')
-    async handleCron() {
+    async handleTrainingCron() {
         const items = await this.itemsService.findAll();
 
         if (!items || items.length === 0) {
@@ -74,6 +74,20 @@ export class AiMonitorCron implements OnModuleInit {
                     this.transactionsService.pushAIJob(item.id, 'train');
                 }
             }
+        }
+    }
+
+    @Cron('0 5 * * *')
+    async handleForecastingCron() {
+        const items = await this.itemsService.findAll();
+
+        if (!items || items.length === 0) {
+            console.log('No items found for AI monitoring.');
+            return;
+        }
+
+        for (const item of items) {
+            this.transactionsService.pushAIJob(item.id, 'forecast');
         }
     }
 

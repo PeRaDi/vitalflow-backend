@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Job } from 'src/rabbitmq/interfaces/job.interface';
+
+import { Job } from '../rabbitmq/interfaces/job.interface';
+
 import { AiMonitorService } from './ai-monitor.service';
 
 @Injectable()
@@ -12,7 +14,6 @@ export class AiMonitorListener {
         const job: Job = payload.job;
         switch (job.queue) {
             case 'TRAINER':
-                // Handle success for trainer jobs
                 console.log(`Trainer job succeeded: ${job.id}`);
                 const trainerResult = this.parseTrainerResult(job.result);
                 this.aiMonitorService.handleTrainerSuccess(
@@ -23,8 +24,20 @@ export class AiMonitorListener {
                 );
                 break;
             case 'FORECASTER':
-                // Handle success for forecaster jobs
                 console.log(`Forecaster job succeeded: ${payload.job.id}`);
+                const forecasterResult = this.parseForecasterResult(job.result);
+                this.aiMonitorService.handleForecasterSuccess(
+                    job.itemId,
+                    job.id,
+                    forecasterResult.cv,
+                    forecasterResult.forecast,
+                    forecasterResult.dailyForecast,
+                    forecasterResult.reorderPoint,
+                    forecasterResult.safetyStock,
+                    forecasterResult.category,
+                    forecasterResult.serviceLevel,
+                    forecasterResult.trendFactor,
+                );
                 break;
             default:
                 console.warn(`Unknown job queue: ${payload.job.queue}`);
@@ -38,41 +51,30 @@ export class AiMonitorListener {
             directionalAccuracy: result['evaluation_metrics']['directional_accuracy'],
         };
     }
+    parseForecasterResult(result: any): {
+        cv: number;
+        forecast: number;
+        dailyForecast: number;
+        reorderPoint: number;
+        safetyStock: number;
+        category: string;
+        serviceLevel: number;
+        trendFactor: number;
+    } {
+        return {
+            cv: result['cv'],
+            forecast: result['ai_forecast'],
+            dailyForecast: result['daily_forecast'],
+            reorderPoint: result['reorder_point'],
+            safetyStock: result['safety_stock'],
+            category: result['abc_xyz_category'],
+            serviceLevel: result['service_level'],
+            trendFactor: result['trend_factor'],
+        };
+    }
+
+    @OnEvent('item.consumed')
+    async handleItemConsumed(payload: { itemId: number }) {
+        this.aiMonitorService.handleItemConsumed(payload.itemId);
+    }
 }
-// {
-//   "job_id": "189445d6-03fb-4ecb-a6aa-43690dc1155c",
-//   "item_id": 2,
-//   "model_performance": {
-//     "test_r2": 0.944381658931752,
-//     "approach": "Adaptive_All_Seasonality",
-//     "test_mae": 26.982466194033623,
-//     "train_r2": 0.9446946448892134,
-//     "test_mape": 4.164480732887498,
-//     "test_rmse": 34.97945142773956,
-//     "input_size": 4,
-//     "train_rmse": 31.594237516770406,
-//     "best_config": "All_Seasonality",
-//     "use_prophet": true,
-//     "directional_accuracy": 81.61559888579387,
-//     "seasonality_features": [
-//       "weekly",
-//       "yearly",
-//       "monthly"
-//     ]
-//   },
-//   "evaluation_metrics": {
-//     "mae": 26.982466194033623,
-//     "mse": 1223.562022185591,
-//     "mape": 4.164480732887498,
-//     "rmse": 34.97945142773956,
-//     "r2_score": 0.944381658931752,
-//     "train_r2": 0.9446946448892134,
-//     "train_mae": 24.251071308690193,
-//     "train_mse": 998.1958442661027,
-//     "train_rmse": 31.594237516770406,
-//     "test_samples": 360,
-//     "train_samples": 1436,
-//     "directional_accuracy": 81.61559888579387
-//   },
-//   "evaluation_report_path": "evaluation_report_item_2.json"
-// }

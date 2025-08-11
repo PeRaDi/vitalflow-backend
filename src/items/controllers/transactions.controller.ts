@@ -1,20 +1,11 @@
-import {
-    Body,
-    Controller,
-    Get,
-    HttpStatus,
-    Param,
-    Patch,
-    Put,
-    Query,
-    Req,
-    Res,
-} from '@nestjs/common';
-import { ItemsService } from 'src/items/services/items.service';
-import BenignErrorResponse from 'src/responses/benign-error-response';
-import ErrorResponse from 'src/responses/error-response';
-import Response from 'src/responses/response';
-import { Roles } from 'src/roles/roles.decorator';
+import { Body, Controller, Get, HttpStatus, Param, Patch, Put, Query, Req, Res } from '@nestjs/common';
+
+import { ItemsService } from '../../items/services/items.service';
+import BenignErrorResponse from '../../responses/benign-error-response';
+import ErrorResponse from '../../responses/error-response';
+import Response from '../../responses/response';
+import { Roles } from '../../roles/roles.decorator';
+
 import { StockTransactionDto } from '../dto/stock-transaction.dto';
 import { TransactionsService } from '../services/transactions.service';
 import { TransactionType } from '../types/transaction-type.enum';
@@ -33,9 +24,7 @@ export class TransactionsController {
         try {
             const user = req.user;
 
-            const itemsOverview = await this.transactionsService.getOverview(
-                user.tenant.id,
-            );
+            const itemsOverview = await this.transactionsService.getOverview(user.tenant.id);
 
             return new Response(
                 res,
@@ -44,10 +33,7 @@ export class TransactionsController {
                 itemsOverview,
             ).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving items overview.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while retrieving items overview.', error).toThrowException();
         }
     }
 
@@ -60,56 +46,30 @@ export class TransactionsController {
 
             const item = await this.itemsService.findOne(itemId);
             if (!item || item.tenantId !== user.tenant.id) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
+                return new BenignErrorResponse(res, 'Item not found.', HttpStatus.NOT_FOUND).toHttpResponse();
             }
 
-            const stats = await this.transactionsService.getConsumptionStats(
-                item.id,
-            );
+            const stats = await this.transactionsService.getConsumptionStats(item.id);
 
-            return new Response(
-                res,
-                'Item statistics retrieved successfully.',
-                HttpStatus.OK,
-                stats,
-            ).toHttpResponse();
+            return new Response(res, 'Item statistics retrieved successfully.', HttpStatus.OK, stats).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving item statistics.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while retrieving item statistics.', error).toThrowException();
         }
     }
 
     @Get(':item_id/history')
     @Roles('user')
-    async getHistory(
-        @Req() req,
-        @Res() res,
-        @Param('item_id') item_id: string,
-        @Query('limit') limit?: string,
-    ) {
+    async getHistory(@Req() req, @Res() res, @Param('item_id') item_id: string, @Query('limit') limit?: string) {
         try {
             const itemId = Number(item_id);
             const user = req.user;
 
             const item = await this.itemsService.findOne(itemId);
             if (!item || item.tenantId !== user.tenant.id) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
+                return new BenignErrorResponse(res, 'Item not found.', HttpStatus.NOT_FOUND).toHttpResponse();
             }
 
-            const history = await this.transactionsService.getHistory(
-                item.id,
-                limit ? Number(limit) : undefined,
-            );
+            const history = await this.transactionsService.getHistory(item.id, limit ? Number(limit) : undefined);
 
             return new Response(
                 res,
@@ -140,30 +100,14 @@ export class TransactionsController {
 
             const item = await this.itemsService.findOne(itemId);
             if (!item || item.tenantId !== user.tenant.id) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
+                return new BenignErrorResponse(res, 'Item not found.', HttpStatus.NOT_FOUND).toHttpResponse();
             }
 
-            const userLogs = await this.transactionsService.getUserLogs(
-                item.id,
-                Number(limit),
-                cursor,
-            );
+            const userLogs = await this.transactionsService.getUserLogs(item.id, Number(limit), cursor);
 
-            return new Response(
-                res,
-                'User logs retrieved successfully.',
-                HttpStatus.OK,
-                userLogs,
-            ).toHttpResponse();
+            return new Response(res, 'User logs retrieved successfully.', HttpStatus.OK, userLogs).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving user logs.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while retrieving user logs.', error).toThrowException();
         }
     }
 
@@ -176,26 +120,14 @@ export class TransactionsController {
 
             const item = await this.itemsService.findOne(itemId);
             if (!item || item.tenantId !== user.tenant.id) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
+                return new BenignErrorResponse(res, 'Item not found.', HttpStatus.NOT_FOUND).toHttpResponse();
             }
 
             const pendingJobs = await this.transactionsService.getJobs(item.id);
 
-            return new Response(
-                res,
-                'Jobs retrieved successfully.',
-                HttpStatus.OK,
-                pendingJobs,
-            ).toHttpResponse();
+            return new Response(res, 'Jobs retrieved successfully.', HttpStatus.OK, pendingJobs).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while retrieving jobs.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while retrieving jobs.', error).toThrowException();
         }
     }
 
@@ -231,22 +163,13 @@ export class TransactionsController {
     async train(@Res() res, @Param('item_id') item_id: string) {
         try {
             const itemId = Number(item_id);
-            const result = await this.transactionsService.pushAIJob(
-                itemId,
-                'train',
-            );
+            const result = await this.transactionsService.pushAIJob(itemId, 'train');
 
-            return new Response(
-                res,
-                'Training successfully initiated.',
-                HttpStatus.OK,
-                { jobId: result },
-            ).toHttpResponse();
+            return new Response(res, 'Training successfully initiated.', HttpStatus.OK, {
+                jobId: result,
+            }).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while initiating training.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while initiating training.', error).toThrowException();
         }
     }
 
@@ -255,30 +178,13 @@ export class TransactionsController {
     async forecast(@Res() res, @Param('item_id') item_id: string) {
         try {
             const itemId = Number(item_id);
-            const result = await this.transactionsService.pushAIJob(
-                itemId,
-                'forecast',
-            );
+            const result = await this.transactionsService.pushAIJob(itemId, 'forecast');
 
-            if (!result) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item model not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
-            }
-
-            return new Response(
-                res,
-                'Forecasting successfully initiated.',
-                HttpStatus.OK,
-                { jobId: result },
-            ).toHttpResponse();
+            return new Response(res, 'Forecasting successfully initiated.', HttpStatus.OK, {
+                jobId: result,
+            }).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while initiating forecasting.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while initiating forecasting.', error).toThrowException();
         }
     }
     //#endregion
@@ -302,11 +208,7 @@ export class TransactionsController {
 
             const item = await this.itemsService.findOne(Number(itemId));
             if (!item || item.tenantId !== user.tenant.id) {
-                return new BenignErrorResponse(
-                    res,
-                    'Item not found.',
-                    HttpStatus.NOT_FOUND,
-                ).toHttpResponse();
+                return new BenignErrorResponse(res, 'Item not found.', HttpStatus.NOT_FOUND).toHttpResponse();
             }
 
             const transactionType: TransactionType =
@@ -317,47 +219,27 @@ export class TransactionsController {
                       : null;
 
             if (!transactionType) {
-                return new ErrorResponse(
-                    'Invalid transaction type.',
-                    HttpStatus.BAD_REQUEST,
-                ).toThrowException();
+                return new ErrorResponse('Invalid transaction type.', HttpStatus.BAD_REQUEST).toThrowException();
             }
 
-            const currentStock = await this.transactionsService.getCurrentStock(
-                item.id,
-            );
+            const currentStock = await this.transactionsService.getCurrentStock(item.id);
 
-            if (
-                transactionType === TransactionType.OUT &&
-                stock > currentStock
-            ) {
+            if (transactionType === TransactionType.OUT && stock > currentStock) {
                 return new ErrorResponse(
                     'Insufficient stock for this transaction.',
                     HttpStatus.BAD_REQUEST,
                 ).toThrowException();
             }
 
-            const status = await this.transactionsService.createTransaction(
-                user.id,
-                item.id,
-                stock,
-                transactionType,
-            );
+            const status = await this.transactionsService.createTransaction(user.id, item.id, stock, transactionType);
 
             if (!status) {
                 throw new Error('Transaction failed');
             }
 
-            return new Response(
-                res,
-                'Stock transaction successfully processed.',
-                HttpStatus.OK,
-            ).toHttpResponse();
+            return new Response(res, 'Stock transaction successfully processed.', HttpStatus.OK).toHttpResponse();
         } catch (error) {
-            return new ErrorResponse(
-                'An error occurred while updating item stock.',
-                error,
-            ).toThrowException();
+            return new ErrorResponse('An error occurred while updating item stock.', error).toThrowException();
         }
     }
     //#endregion

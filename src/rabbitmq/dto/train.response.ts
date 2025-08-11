@@ -4,5 +4,6 @@ export class TrainerPayloadDto {
         success: boolean;
         data?: any;
         error?: string;
+        status?: 'NOT_FOUND' | 'SUCCESS' | 'ERROR';
     };
 }
